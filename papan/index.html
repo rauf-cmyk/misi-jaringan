@@ -1,158 +1,235 @@
-/**
- * Server Progres "Misi Jaringan" · Informatika SMIT Gema Nurani
- * Created By Ai Prompted By Guru Belajar Digital (Rauf)
- *
- * CARA PAKAI (sekali saja):
- * 1. Buat Google Sheet baru, misalnya "Progres Misi Jaringan 2026".
- * 2. Menu Ekstensi › Apps Script. Hapus isi Code.gs, tempel seluruh file ini, lalu Simpan.
- * 3. Ubah daftar KODE_KELAS di bawah sesuai kelas Anda.
- * 4. Pilih fungsi "setup" di toolbar, klik Jalankan, lalu izinkan aksesnya.
- *    Isi tab "Daftar Siswa": satu baris per siswa (Kelas · No. Absen · Nama).
- *    Kolom Kelas harus sama dengan nilai di KODE_KELAS, misalnya 8B.
- * 5. Terapkan › Deployment baru › jenis "Aplikasi web".
- *      Jalankan sebagai: Saya
- *      Yang memiliki akses: Siapa saja
- *    Salin URL Web App (berakhiran /exec), lalu tempel ke ENDPOINT di media ajar.
- * Jika kode ini diubah lagi: Terapkan › Kelola deployment › Edit › Versi baru (URL tetap sama).
- */
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Papan Bintang Misi Jaringan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: papan skor untuk Smart TV. Header statistik, kiri podium + peringkat, kanan kemajuan misi + kabar terbaru, bawah semua siswa. Satu tema malam yang sama dengan HUD Misi Jaringan. */
+:root{
+  --night:#0d1530; --panel:#18224a; --panel2:#212d5c; --line:#2d3a6e;
+  --cream:#f3ecd8; --muted:#a3acd0; --signal:#ffc93c; --ok:#3fd38a; --silver:#cfd6ea; --bronze:#e0995c;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 600px at 20% -10%,#1d2a63 0,transparent 60%),var(--night);color:var(--cream);font-family:var(--f-body);
+  padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  display:flex;flex-direction:column;gap:12px;font-size:clamp(13px,1.05vw,20px);overflow:auto}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+[hidden]{display:none!important}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--f-display);font-weight:800;font-size:2.1em;color:var(--signal);letter-spacing:.01em}
+.brand span{font-size:.8em;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.kelas{font-family:var(--f-display);font-weight:800;font-size:1.6em;background:var(--signal);color:#2a1d00;border-radius:14px;padding:2px 16px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 14px;display:flex;flex-direction:column;min-width:7.5em}
+.stat small{color:var(--muted);font-size:.72em;letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-family:var(--f-display);font-size:1.5em;line-height:1.1;font-variant-numeric:tabular-nums}
+.live{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--muted)}
+.live i{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(63,211,138,.7);animation:pulse 2s infinite}
+.live.err i{background:#ff6b6b;animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(63,211,138,0)}100%{box-shadow:0 0 0 0 rgba(63,211,138,0)}}
+.tb{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 12px;font-size:.8em}
+.demo{background:#ff6b6b;color:#fff;font-weight:600;border-radius:8px;padding:3px 10px;font-size:.75em;letter-spacing:.06em}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+.col{display:flex;flex-direction:column;gap:14px;min-height:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 18px;min-height:0}
+.col>.panel:first-child{flex-shrink:0}
+.panel h2{font-family:var(--f-display);font-weight:800;font-size:1.15em;margin:0 0 8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+/* podium */
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:12px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0}
+.pod .who{font-family:var(--f-display);font-weight:800;font-size:1.3em;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .pts{font-family:var(--f-display);font-weight:800;font-size:1.8em;line-height:1;color:var(--signal);font-variant-numeric:tabular-nums}
+.pod .pts small{font-size:.45em;color:var(--muted);margin-left:4px}
+.block{width:100%;border-radius:14px 14px 6px 6px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:2em;color:#1b2440}
+.p1 .block{height:3.6em;background:linear-gradient(180deg,#ffd75e,#e0a400)}
+.p2 .block{height:2.6em;background:linear-gradient(180deg,#e7ecf8,#aab4cf)}
+.p3 .block{height:1.9em;background:linear-gradient(180deg,#f0b07a,#b86c33)}
+.p1 .who{font-size:1.5em}
+.pod.empty .who{color:var(--muted);font-weight:600;font-size:1em}
+.crown{font-size:1.4em;line-height:1}
+/* pips */
+.pips{display:flex;gap:3px}
+.pips i{width:1.2em;height:.55em;border-radius:3px;background:#2c3658}
+.pips i.s1{background:#6b5a1e}.pips i.s2{background:#b38a1f}.pips i.s3{background:var(--signal)}
+/* rank list */
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.rank li{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto 3.4em;gap:10px;align-items:center;background:var(--panel2);border-radius:12px;padding:2px 12px}
+.rank .n{font-family:var(--f-display);font-weight:800;font-size:1.2em;color:var(--muted)}
+.rank .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank .tt{font-family:var(--f-display);font-weight:800;font-size:1.3em;text-align:right;color:var(--signal);font-variant-numeric:tabular-nums}
+.up{color:var(--ok);font-size:.75em;margin-left:6px}
+.flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%,30%{box-shadow:0 0 0 3px var(--signal);background:#3a3a1a}100%{box-shadow:0 0 0 0 transparent}}
+/* progress */
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 4.2em;gap:10px;align-items:center}
+.bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.9em}
+.bar .tr{height:.9em;border-radius:99px;background:#2c3658;overflow:hidden}
+.bar .tr i{display:block;height:100%;background:linear-gradient(90deg,#3fd38a,#ffc93c);border-radius:99px;transition:width .8s}
+.bar b{font-family:var(--f-mono);font-size:.85em;text-align:right;color:var(--muted)}
+/* feed */
+.feed{list-style:none;margin:0;padding:0;display:grid;gap:6px;overflow:hidden}
+.feed li{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:10px;font-size:.92em;align-items:baseline}
+.feed time{font-family:var(--f-mono);color:var(--muted);font-size:.85em}
+.feed b{color:var(--signal)}
+.feed .st{color:var(--signal);letter-spacing:1px}
+/* all students */
+.all{display:grid;grid-template-columns:repeat(auto-fill,minmax(12.5em,1fr));gap:8px;max-height:26vh;overflow:auto}
+.chip{background:var(--panel2);border-radius:12px;padding:7px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center}
+.chip .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92em}
+.chip .nm small{color:var(--muted);font-weight:400;margin-right:4px}
+.chip .tt{font-family:var(--f-display);font-weight:800;color:var(--signal)}
+.chip.zero .tt{color:var(--muted)}
+.chip .rf{font-size:.75em;color:var(--ok)}
+/* celebration */
+#pop{position:fixed;left:50%;bottom:30%;transform:translateX(-50%);z-index:20;background:var(--signal);color:#2a1d00;border-radius:22px;padding:18px 30px;
+  font-family:var(--f-display);font-weight:800;font-size:2em;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);max-width:90vw;animation:popin .45s cubic-bezier(.2,1.6,.4,1)}
+#pop small{display:block;font-family:var(--f-body);font-weight:500;font-size:.5em}
+@keyframes popin{from{transform:translateX(-50%) scale(.6);opacity:0}}
+/* setup */
+#setup{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,12,30,.85);z-index:30;padding:16px}
+#setup form{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;width:min(460px,100%)}
+#setup h1{font-family:var(--f-display);margin:0;color:var(--signal)}
+#setup input{font:inherit;font-size:1.1em;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--night);color:var(--cream);text-transform:uppercase}
+#setup .go{background:var(--signal);color:#2a1d00;border:0;border-radius:12px;padding:10px;font-weight:700;font-family:var(--f-display);font-size:1.2em}
+#setup p{margin:0;color:var(--muted);font-size:.9em}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.72em;color:var(--muted)}
+@media (max-width:900px){body{overflow:auto;height:auto}main{grid-template-columns:minmax(0,1fr)}.all{max-height:none}.stats{margin-left:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Papan Bintang</b><span id="sub">Misi Jaringan · Sesi 2 Routing</span></div>
+  <div class="kelas" id="kelas">—</div>
+  <span class="demo" id="demo" hidden>MODE CONTOH · DATA BUKAN SISWA ASLI</span>
+  <div class="stats">
+    <div class="stat"><small>Siswa aktif</small><b id="sAktif">0/0</b></div>
+    <div class="stat"><small>Bintang kelas</small><b id="sBintang">0/0</b></div>
+    <div class="stat"><small>Tamat 5 misi</small><b id="sTamat">0</b></div>
+    <div class="stat"><small>Refleksi</small><b id="sRefl">0</b></div>
+  </div>
+  <div class="live" id="live"><i></i><span id="upd">Menghubungkan…</span></div>
+  <button class="tb" id="fs" type="button">Layar penuh</button>
+</header>
+<main>
+  <div class="col">
+    <section class="panel"><h2>Top 3</h2><div class="podium" id="podium"></div></section>
+    <section class="panel" style="flex:1;overflow:auto;min-height:9em"><h2>Peringkat 4–10</h2><ol class="rank" id="rank"></ol></section>
+  </div>
+  <div class="col">
+    <section class="panel"><h2>Kemajuan kelas per misi</h2><div class="bars" id="bars"></div></section>
+    <section class="panel" style="flex:1;overflow:hidden"><h2>Kabar terbaru</h2><ul class="feed" id="feed"></ul></section>
+  </div>
+</main>
+<section class="panel"><h2>Semua siswa · bintang terbaik per misi</h2><div class="all" id="all"></div></section>
+<footer><span>Peringkat: total bintang terbanyak; jika sama, yang lebih dulu mencapainya. Semua siswa bisa mengulang misi untuk menambah bintang.</span><span>Created By Ai Prompted By Guru Belajar Digital (Rauf) · SMIT Gema Nurani</span></footer>
+<div id="pop" hidden></div>
+<div id="setup" hidden>
+  <form id="setupForm">
+    <h1>Papan Bintang</h1>
+    <p>Masukkan kode kelas yang ingin ditayangkan. Simpan alamat halaman setelahnya sebagai bookmark untuk tiap kelas.</p>
+    <label for="inKode">Kode kelas</label><input id="inKode" placeholder="contoh: 8B-GN26" autocomplete="off" maxlength="17">
+    <button class="go" type="submit">Tayangkan</button>
+    <p id="setupMsg"></p>
+  </form>
+</div>
+<script>
+(function(){
+"use strict";
+/* ===== PENGATURAN GURU: URL Web App Apps Script yang sama dengan media siswa ===== */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+const SESI='Sesi 2 Routing';
+const MISI=['Fakta atau Mitos Paket?','Pecah & Susun Paket','Hitung Bobot Rute','Misi Ambulans','Router Pintar'];
+const POLL=15000;
+/* ================================================================================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const q=new URLSearchParams(location.search);
+const DEMO=!ENDPOINT||q.get('demo')==='1';
+let kode=(q.get('kode')||'').trim().toUpperCase();
+let seen=null,prevRank={},popQ=[],popping=false,timer=0;
+const hhmm=t=>new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'});
+const stars=n=>'★'.repeat(n||0);
+const pips=m=>'<span class="pips">'+MISI.map((_,k)=>`<i class="s${m[k+1]||0}" title="Misi ${k+1}: ${m[k+1]||0} bintang"></i>`).join('')+'</span>';
+const fkey=f=>f.t+'|'+f.nama+'|'+f.jenis+'|'+f.misi+'|'+f.bintang;
 
-// Kode yang dibagikan guru ke siswa → nama kelas yang tercatat di Sheet.
-const KODE_KELAS = {
-  '8A-GN26': '8A',
-  '8B-GN26': '8B',
-  '8C-GN26': '8C',
-  '8D-GN26': '8D'
-};
+function render(d){
+  const S=d.siswa.slice();
+  const ranked=S.filter(s=>s.total>0).sort((a,b)=>b.total-a.total||(a.t||0)-(b.t||0)||a.nama.localeCompare(b.nama));
+  const rankOf={};ranked.forEach((s,k)=>rankOf[s.nama]=k+1);
+  $('kelas').textContent=d.kelas;
+  $('sAktif').textContent=ranked.length+'/'+S.length;
+  $('sBintang').textContent=S.reduce((a,s)=>a+s.total,0)+'/'+S.length*15;
+  $('sTamat').textContent=S.filter(s=>MISI.every((_,k)=>s.m[k+1])).length;
+  $('sRefl').textContent=S.filter(s=>s.refl).length;
+  const up=n=>prevRank[n]&&rankOf[n]<prevRank[n]?'<span class="up">▲'+(prevRank[n]-rankOf[n])+'</span>':'';
+  // podium order 2,1,3
+  $('podium').innerHTML=[1,0,2].map(k=>{const s=ranked[k],cls='pod p'+(k+1);
+    if(!s)return `<div class="${cls} empty"><div class="who">Menunggu juara…</div><div class="block">${k+1}</div></div>`;
+    return `<div class="${cls}" data-n="${esc(s.nama)}">${k===0?'<div class="crown">👑</div>':''}<div class="who">${esc(s.nama)}${up(s.nama)}</div><div class="pts">${s.total}<small>/15 ★</small></div>${pips(s.m)}<div class="block">${k+1}</div></div>`;}).join('');
+  $('rank').innerHTML=ranked.slice(3,10).map((s,k)=>`<li data-n="${esc(s.nama)}"><span class="n">${k+4}</span><span class="nm">${esc(s.nama)}${up(s.nama)}</span>${pips(s.m)}<span class="tt">${s.total} ★</span></li>`).join('')||'<li><span></span><span class="nm" style="color:var(--muted)">Belum ada peringkat 4–10.</span></li>';
+  $('bars').innerHTML=MISI.map((t,k)=>{const n=S.filter(s=>s.m[k+1]).length,p=S.length?n/S.length*100:0;return `<div class="bar"><span>${k+1}. ${esc(t)}</span><div class="tr"><i style="width:${p}%"></i></div><b>${n}/${S.length}</b></div>`;}).join('');
+  $('feed').innerHTML=d.feed.map(f=>`<li><time>${hhmm(f.t)}</time><span>${f.jenis==='refleksi'?`<b>${esc(f.nama)}</b> menulis refleksi${f.am?' · '+esc(f.am):''}`:`<b>${esc(f.nama)}</b> menyelesaikan ${esc(MISI[(+f.misi)-1]||f.judul)} <span class="st">${stars(+f.bintang)}</span>`}</span></li>`).join('')||'<li><time></time><span style="color:var(--muted)">Belum ada aktivitas. Ayo mulai misi!</span></li>';
+  const byNo=S.slice().sort((a,b)=>(Number(a.no)||999)-(Number(b.no)||999)||a.nama.localeCompare(b.nama));
+  $('all').innerHTML=byNo.map(s=>`<div class="chip ${s.total?'':'zero'}" data-n="${esc(s.nama)}"><span class="nm">${s.no!==''&&s.no!=null?`<small>${esc(s.no)}.</small>`:''}${esc(s.nama)}</span><span class="tt">${s.total} ★</span>${pips(s.m)}<span class="rf">${s.refl?'✓ refleksi':''}</span></div>`).join('');
+  // new events → celebration + flash
+  const fresh=seen?d.feed.filter(f=>!seen.has(fkey(f))):[];
+  seen=seen||new Set();d.feed.forEach(f=>seen.add(fkey(f)));
+  fresh.reverse().forEach(f=>{popQ.push(f);document.querySelectorAll(`[data-n="${CSS.escape(f.nama)}"]`).forEach(el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});});
+  if(popQ.length)nextPop();
+  prevRank=rankOf;
+}
+function nextPop(){
+  if(popping||!popQ.length)return;popping=true;const f=popQ.shift(),p=$('pop');
+  p.innerHTML=f.jenis==='refleksi'?`🕌 ${esc(f.nama)}<small>menyelesaikan refleksi${f.am?' · '+esc(f.am):''}</small>`:`${+f.bintang===3?'🎉':'⭐'} ${esc(f.nama)} ${stars(+f.bintang)}<small>menyelesaikan Misi ${esc(f.misi)} · ${esc(MISI[(+f.misi)-1]||f.judul)}</small>`;
+  p.hidden=false;p.style.animation='none';void p.offsetWidth;p.style.animation='';
+  setTimeout(()=>{p.hidden=true;popping=false;nextPop();},popQ.length>2?1800:3600);
+}
+async function load(){
+  clearTimeout(timer);
+  try{
+    const d=DEMO?demoData():await (await fetch(ENDPOINT+'?papan=1&kode='+encodeURIComponent(kode)+'&sesi='+encodeURIComponent(SESI))).json();
+    if(!d.ok){$('live').classList.add('err');$('upd').textContent=d.error==='kode'?'Kode kelas tidak dikenal':'Server menolak: '+(d.error||'?');if(d.error==='kode')askKode('Kode kelas tidak dikenal. Periksa daftar KODE_KELAS di Apps Script.');return;}
+    render(d);$('live').classList.remove('err');$('upd').textContent='Live · diperbarui '+new Date().toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta'});
+  }catch(e){$('live').classList.add('err');$('upd').textContent='Koneksi terputus, mencoba lagi…';}
+  timer=setTimeout(load,DEMO?6000:POLL);
+}
+function askKode(msg){$('setup').hidden=false;$('setupMsg').textContent=msg||'';$('inKode').value=kode;setTimeout(()=>$('inKode').focus(),50);}
+$('setupForm').onsubmit=e=>{e.preventDefault();const v=$('inKode').value.trim().toUpperCase();if(!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(v)){$('setupMsg').textContent='Format kode: 8B-GN26';return;}
+  kode=v;try{const u=new URL(location.href);u.searchParams.set('kode',v);history.replaceState(null,'',u);}catch(x){}
+  $('setup').hidden=true;seen=null;prevRank={};load();};
+$('fs').onclick=()=>{try{const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(()=>{});}catch(e){}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});
 
-const SHEET_PROGRES = 'Progres';
-const SHEET_SISWA = 'Daftar Siswa';
-const HEADER = ['Waktu', 'Sesi', 'Kode kelas', 'Kelas', 'Nama', 'ID perangkat', 'Jenis', 'Misi', 'Judul misi',
-  'Bintang', 'Kesalahan', 'Asmaul Husna', 'Alasan', 'Kesan', 'Kesulitan', 'Aksi', 'ID catatan'];
-
-function setup() {
-  const ss = SpreadsheetApp.getActive();
-  let sh = ss.getSheetByName(SHEET_PROGRES) || ss.insertSheet(SHEET_PROGRES);
-  sh.getRange(1, 1, 1, HEADER.length).setValues([HEADER]).setFontWeight('bold').setBackground('#1b2440').setFontColor('#ffffff');
-  sh.setFrozenRows(1);
-  sh.getRange('A:A').setNumberFormat('dd/MM/yyyy HH:mm');
-
-  // Daftar siswa: diisi guru, tidak pernah dihapus oleh setup
-  let ds = ss.getSheetByName(SHEET_SISWA);
-  if (!ds) {
-    ds = ss.insertSheet(SHEET_SISWA, 0);
-    ds.getRange(1, 1, 1, 3).setValues([['Kelas', 'No. Absen', 'Nama']]).setFontWeight('bold').setBackground('#ffc93c');
-    ds.setFrozenRows(1);
-    ds.getRange('E1').setValue('Isi satu baris per siswa. Kolom Kelas harus sama dengan nilai di KODE_KELAS (mis. 8B). Nama ini yang muncul di pilihan siswa dan tercatat di Progres.').setFontStyle('italic');
-    ds.setColumnWidth(3, 220);
+/* ---- Mode contoh: data rekaan untuk melihat tampilan tanpa server ---- */
+let demoState=null;
+function demoData(){
+  if(!demoState){
+    const names=['Contoh Adi','Contoh Bunga','Contoh Cahya','Contoh Dimas','Contoh Elsa','Contoh Farhan','Contoh Gita','Contoh Hana','Contoh Ilham','Contoh Jihan','Contoh Kevin','Contoh Laila','Contoh Malik','Contoh Nadia','Contoh Oki','Contoh Putri','Contoh Raka','Contoh Sinta'];
+    const t0=Date.now()-40*60000;
+    demoState={feed:[],siswa:names.map((n,k)=>{const m={};const done=Math.max(0,5-Math.floor(k/3));for(let i=1;i<=done;i++)m[i]=1+((k+i)%3);return {nama:n,no:k+1,m,refl:done===5&&k%2===0,t:t0+k*60000};})};
   }
-
-  // Rekap: bintang terbaik setiap siswa per misi
-  let rk = ss.getSheetByName('Rekap Bintang') || ss.insertSheet('Rekap Bintang');
-  rk.clear();
-  rk.getRange('A1').setValue('Bintang terbaik per misi (kolom 1–5 = nomor misi). Diperbarui otomatis.').setFontStyle('italic');
-  rk.getRange('A3').setFormula(
-    "=IFERROR(QUERY(Progres!A1:Q, \"select B, D, E, max(J) where G = 'misi' group by B, D, E pivot H order by B, D, E label B 'Sesi', D 'Kelas', E 'Nama', max(J) ''\", 1), \"Belum ada data\")");
-
-  // Refleksi siswa, terbaru di atas
-  let rf = ss.getSheetByName('Refleksi') || ss.insertSheet('Refleksi');
-  rf.clear();
-  rf.getRange('A1').setFormula(
-    "=IFERROR(QUERY(Progres!A1:Q, \"select A, B, D, E, L, M, N, O, P where G = 'refleksi' order by A desc\", 1), \"Belum ada refleksi\")");
-  rf.setFrozenRows(1);
-
-  const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('Lembar1');
-  if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
+  const D=demoState;const s=D.siswa[Math.floor(Math.random()*D.siswa.length)];
+  const nextM=[1,2,3,4,5].find(i=>!s.m[i]||s.m[i]<3);
+  if(nextM){const b=Math.min(3,(s.m[nextM]||0)+1+Math.floor(Math.random()*2));s.m[nextM]=b;s.t=Date.now();D.feed.unshift({t:Date.now(),nama:s.nama,jenis:'misi',misi:nextM,judul:MISI[nextM-1],bintang:b});}
+  D.siswa.forEach(x=>x.total=Object.values(x.m).reduce((a,b)=>a+b,0));
+  return {ok:true,kelas:'8B',sesi:SESI,siswa:JSON.parse(JSON.stringify(D.siswa)),feed:D.feed.slice(0,8)};
 }
-
-function doGet(e) {
-  const kode = String((e && e.parameter && e.parameter.kode) || '').trim().toUpperCase();
-  if (!kode) return out({ ok: true, pesan: 'Server Misi Jaringan aktif' });
-  const kelas = KODE_KELAS[kode];
-  if (!kelas) return out({ ok: false, error: 'kode' });
-  if (e.parameter.papan) return out(papan(kelas, String(e.parameter.sesi || '').slice(0, 30)));
-  return out({ ok: true, kelas: kelas, siswa: daftarSiswa(kelas) });
-}
-
-// Data Papan Bintang: bintang terbaik tiap siswa per misi + kabar terbaru (disimpan 10 detik)
-function papan(kelas, sesi) {
-  const cache = CacheService.getScriptCache(), ck = 'papan|' + kelas + '|' + sesi;
-  const hit = cache.get(ck);
-  if (hit) return JSON.parse(hit);
-  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(SHEET_PROGRES);
-  const rows = sh && sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 17).getValues() : [];
-  const map = {};
-  daftarSiswa(kelas).forEach(s => { map[norm(s.nama)] = { nama: s.nama, no: s.no, m: {}, total: 0, refl: false, t: null }; });
-  const feed = [];
-  rows.forEach(r => {
-    if (String(r[3]) !== kelas || (sesi && String(r[1]) !== sesi)) return;
-    const nama = String(r[4]).replace(/^'/, ''), k = norm(nama), t = new Date(r[0]).getTime();
-    const s = map[k] || (map[k] = { nama: nama, no: '', m: {}, total: 0, refl: false, t: null });
-    if (r[6] === 'misi') {
-      const mi = String(r[7]), b = Number(r[9]) || 0;
-      if (b > (s.m[mi] || 0)) { s.m[mi] = b; s.t = t; }
-    } else if (r[6] === 'refleksi') s.refl = true;
-    feed.push({ t: t, nama: nama, jenis: String(r[6]), misi: r[7], judul: String(r[8]), bintang: r[9], am: String(r[11]) });
-  });
-  const siswa = Object.keys(map).map(k => {
-    const s = map[k]; s.total = Object.keys(s.m).reduce((a, x) => a + s.m[x], 0); return s;
-  });
-  const res = { ok: true, kelas: kelas, sesi: sesi, now: Date.now(), siswa: siswa, feed: feed.slice(-8).reverse() };
-  cache.put(ck, JSON.stringify(res), 10);
-  return res;
-}
-
-// Daftar nama siswa satu kelas dari tab "Daftar Siswa", urut nomor absen
-function daftarSiswa(kelas) {
-  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SISWA);
-  if (!sh || sh.getLastRow() < 2) return [];
-  return sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
-    .filter(r => String(r[0]).trim().toUpperCase() === kelas.toUpperCase() && String(r[2]).trim())
-    .map(r => ({ no: r[1] === '' ? '' : r[1], nama: String(r[2]).trim().replace(/\s+/g, ' ') }))
-    .sort((a, b) => (Number(a.no) || 999) - (Number(b.no) || 999));
-}
-const norm = s => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
-
-function doPost(e) {
-  let d;
-  try { d = JSON.parse(e.postData.contents); } catch (err) { return out({ ok: false, error: 'format' }); }
-
-  const kode = String(d.kode || '').trim().toUpperCase();
-  const kelas = KODE_KELAS[kode];
-  if (!kelas) return out({ ok: false, error: 'kode' });
-  if (!d.nama || !d.jenis) return out({ ok: false, error: 'format' });
-  // Jika daftar kelas sudah diisi, hanya nama yang terdaftar yang diterima
-  const siswa = daftarSiswa(kelas);
-  if (siswa.length && !siswa.some(s => norm(s.nama) === norm(d.nama))) return out({ ok: false, error: 'nama' });
-
-  const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
-  try {
-    const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_PROGRES);
-    if (!sh) return out({ ok: false, error: 'setup' });
-    const id = clean(d.id, 60);
-    // Catatan yang sama tidak ditulis dua kali (misalnya saat kirim ulang setelah sinyal putus)
-    if (id && sh.getRange('Q:Q').createTextFinder(id).matchEntireCell(true).findNext()) return out({ ok: true, dup: true });
-    sh.appendRow([
-      new Date(), clean(d.sesi, 30), kode, kelas, clean(d.nama, 40), clean(d.perangkat, 40), clean(d.jenis, 12),
-      num(d.misi), clean(d.judul, 60), num(d.bintang), num(d.kesalahan),
-      clean(d.am, 20), clean(d.alasan, 500), clean(d.kesan, 500), clean(d.sulit, 500), clean(d.aksi, 500), id
-    ]);
-    return out({ ok: true });
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-// Potong teks dan cegah isian siswa dibaca Sheet sebagai rumus
-function clean(v, max) {
-  let s = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim().slice(0, max);
-  if (/^[=+\-@]/.test(s)) s = "'" + s;
-  return s;
-}
-function num(v) {
-  const n = Number(v);
-  return isFinite(n) && v !== '' && v != null ? n : '';
-}
-function out(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
+if(DEMO){$('demo').hidden=false;load();}
+else if(!kode)askKode();else load();
+})();
+</script>
+</body>
+</html>
