@@ -1,0 +1,158 @@
+/**
+ * Server Progres "Misi Jaringan" · Informatika SMIT Gema Nurani
+ * Created By Ai Prompted By Guru Belajar Digital (Rauf)
+ *
+ * CARA PAKAI (sekali saja):
+ * 1. Buat Google Sheet baru, misalnya "Progres Misi Jaringan 2026".
+ * 2. Menu Ekstensi › Apps Script. Hapus isi Code.gs, tempel seluruh file ini, lalu Simpan.
+ * 3. Ubah daftar KODE_KELAS di bawah sesuai kelas Anda.
+ * 4. Pilih fungsi "setup" di toolbar, klik Jalankan, lalu izinkan aksesnya.
+ *    Isi tab "Daftar Siswa": satu baris per siswa (Kelas · No. Absen · Nama).
+ *    Kolom Kelas harus sama dengan nilai di KODE_KELAS, misalnya 8B.
+ * 5. Terapkan › Deployment baru › jenis "Aplikasi web".
+ *      Jalankan sebagai: Saya
+ *      Yang memiliki akses: Siapa saja
+ *    Salin URL Web App (berakhiran /exec), lalu tempel ke ENDPOINT di media ajar.
+ * Jika kode ini diubah lagi: Terapkan › Kelola deployment › Edit › Versi baru (URL tetap sama).
+ */
+
+// Kode yang dibagikan guru ke siswa → nama kelas yang tercatat di Sheet.
+const KODE_KELAS = {
+  '8A-GN26': '8A',
+  '8B-GN26': '8B',
+  '8C-GN26': '8C',
+  '8D-GN26': '8D'
+};
+
+const SHEET_PROGRES = 'Progres';
+const SHEET_SISWA = 'Daftar Siswa';
+const HEADER = ['Waktu', 'Sesi', 'Kode kelas', 'Kelas', 'Nama', 'ID perangkat', 'Jenis', 'Misi', 'Judul misi',
+  'Bintang', 'Kesalahan', 'Asmaul Husna', 'Alasan', 'Kesan', 'Kesulitan', 'Aksi', 'ID catatan'];
+
+function setup() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_PROGRES) || ss.insertSheet(SHEET_PROGRES);
+  sh.getRange(1, 1, 1, HEADER.length).setValues([HEADER]).setFontWeight('bold').setBackground('#1b2440').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  sh.getRange('A:A').setNumberFormat('dd/MM/yyyy HH:mm');
+
+  // Daftar siswa: diisi guru, tidak pernah dihapus oleh setup
+  let ds = ss.getSheetByName(SHEET_SISWA);
+  if (!ds) {
+    ds = ss.insertSheet(SHEET_SISWA, 0);
+    ds.getRange(1, 1, 1, 3).setValues([['Kelas', 'No. Absen', 'Nama']]).setFontWeight('bold').setBackground('#ffc93c');
+    ds.setFrozenRows(1);
+    ds.getRange('E1').setValue('Isi satu baris per siswa. Kolom Kelas harus sama dengan nilai di KODE_KELAS (mis. 8B). Nama ini yang muncul di pilihan siswa dan tercatat di Progres.').setFontStyle('italic');
+    ds.setColumnWidth(3, 220);
+  }
+
+  // Rekap: bintang terbaik setiap siswa per misi
+  let rk = ss.getSheetByName('Rekap Bintang') || ss.insertSheet('Rekap Bintang');
+  rk.clear();
+  rk.getRange('A1').setValue('Bintang terbaik per misi (kolom 1–5 = nomor misi). Diperbarui otomatis.').setFontStyle('italic');
+  rk.getRange('A3').setFormula(
+    "=IFERROR(QUERY(Progres!A1:Q, \"select B, D, E, max(J) where G = 'misi' group by B, D, E pivot H order by B, D, E label B 'Sesi', D 'Kelas', E 'Nama', max(J) ''\", 1), \"Belum ada data\")");
+
+  // Refleksi siswa, terbaru di atas
+  let rf = ss.getSheetByName('Refleksi') || ss.insertSheet('Refleksi');
+  rf.clear();
+  rf.getRange('A1').setFormula(
+    "=IFERROR(QUERY(Progres!A1:Q, \"select A, B, D, E, L, M, N, O, P where G = 'refleksi' order by A desc\", 1), \"Belum ada refleksi\")");
+  rf.setFrozenRows(1);
+
+  const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('Lembar1');
+  if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
+}
+
+function doGet(e) {
+  const kode = String((e && e.parameter && e.parameter.kode) || '').trim().toUpperCase();
+  if (!kode) return out({ ok: true, pesan: 'Server Misi Jaringan aktif' });
+  const kelas = KODE_KELAS[kode];
+  if (!kelas) return out({ ok: false, error: 'kode' });
+  if (e.parameter.papan) return out(papan(kelas, String(e.parameter.sesi || '').slice(0, 30)));
+  return out({ ok: true, kelas: kelas, siswa: daftarSiswa(kelas) });
+}
+
+// Data Papan Bintang: bintang terbaik tiap siswa per misi + kabar terbaru (disimpan 10 detik)
+function papan(kelas, sesi) {
+  const cache = CacheService.getScriptCache(), ck = 'papan|' + kelas + '|' + sesi;
+  const hit = cache.get(ck);
+  if (hit) return JSON.parse(hit);
+  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(SHEET_PROGRES);
+  const rows = sh && sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 17).getValues() : [];
+  const map = {};
+  daftarSiswa(kelas).forEach(s => { map[norm(s.nama)] = { nama: s.nama, no: s.no, m: {}, total: 0, refl: false, t: null }; });
+  const feed = [];
+  rows.forEach(r => {
+    if (String(r[3]) !== kelas || (sesi && String(r[1]) !== sesi)) return;
+    const nama = String(r[4]).replace(/^'/, ''), k = norm(nama), t = new Date(r[0]).getTime();
+    const s = map[k] || (map[k] = { nama: nama, no: '', m: {}, total: 0, refl: false, t: null });
+    if (r[6] === 'misi') {
+      const mi = String(r[7]), b = Number(r[9]) || 0;
+      if (b > (s.m[mi] || 0)) { s.m[mi] = b; s.t = t; }
+    } else if (r[6] === 'refleksi') s.refl = true;
+    feed.push({ t: t, nama: nama, jenis: String(r[6]), misi: r[7], judul: String(r[8]), bintang: r[9], am: String(r[11]) });
+  });
+  const siswa = Object.keys(map).map(k => {
+    const s = map[k]; s.total = Object.keys(s.m).reduce((a, x) => a + s.m[x], 0); return s;
+  });
+  const res = { ok: true, kelas: kelas, sesi: sesi, now: Date.now(), siswa: siswa, feed: feed.slice(-8).reverse() };
+  cache.put(ck, JSON.stringify(res), 10);
+  return res;
+}
+
+// Daftar nama siswa satu kelas dari tab "Daftar Siswa", urut nomor absen
+function daftarSiswa(kelas) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SISWA);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
+    .filter(r => String(r[0]).trim().toUpperCase() === kelas.toUpperCase() && String(r[2]).trim())
+    .map(r => ({ no: r[1] === '' ? '' : r[1], nama: String(r[2]).trim().replace(/\s+/g, ' ') }))
+    .sort((a, b) => (Number(a.no) || 999) - (Number(b.no) || 999));
+}
+const norm = s => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+function doPost(e) {
+  let d;
+  try { d = JSON.parse(e.postData.contents); } catch (err) { return out({ ok: false, error: 'format' }); }
+
+  const kode = String(d.kode || '').trim().toUpperCase();
+  const kelas = KODE_KELAS[kode];
+  if (!kelas) return out({ ok: false, error: 'kode' });
+  if (!d.nama || !d.jenis) return out({ ok: false, error: 'format' });
+  // Jika daftar kelas sudah diisi, hanya nama yang terdaftar yang diterima
+  const siswa = daftarSiswa(kelas);
+  if (siswa.length && !siswa.some(s => norm(s.nama) === norm(d.nama))) return out({ ok: false, error: 'nama' });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_PROGRES);
+    if (!sh) return out({ ok: false, error: 'setup' });
+    const id = clean(d.id, 60);
+    // Catatan yang sama tidak ditulis dua kali (misalnya saat kirim ulang setelah sinyal putus)
+    if (id && sh.getRange('Q:Q').createTextFinder(id).matchEntireCell(true).findNext()) return out({ ok: true, dup: true });
+    sh.appendRow([
+      new Date(), clean(d.sesi, 30), kode, kelas, clean(d.nama, 40), clean(d.perangkat, 40), clean(d.jenis, 12),
+      num(d.misi), clean(d.judul, 60), num(d.bintang), num(d.kesalahan),
+      clean(d.am, 20), clean(d.alasan, 500), clean(d.kesan, 500), clean(d.sulit, 500), clean(d.aksi, 500), id
+    ]);
+    return out({ ok: true });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Potong teks dan cegah isian siswa dibaca Sheet sebagai rumus
+function clean(v, max) {
+  let s = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s;
+}
+function num(v) {
+  const n = Number(v);
+  return isFinite(n) && v !== '' && v != null ? n : '';
+}
+function out(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
