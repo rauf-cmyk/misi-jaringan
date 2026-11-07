@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Misi Jaringan Sesi 2</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri&family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -750,9 +754,12 @@
         }
     }
 </style>
+</head>
+<body>
 <style>
 /* Tambahan Sesi 2: kota paket data, graf misi, kartu paket */
 .mcard.refl{border-color:var(--signal)}
+.field select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:2px solid var(--ink);background:#fff;color:var(--ink);width:100%}
 .feedback span b,.feedback span strong{font-family:inherit;font-size:inherit}
 table.rt,table.dj{color:var(--ink);font-family:var(--f-body)}
 table.rt th,table.dj th{color:var(--ink2);font-size:13px}
@@ -834,8 +841,10 @@ textarea{font:inherit;padding:10px 12px;border-radius:10px;border:2px solid var(
     <div class="sheet-head"><div><p class="eyebrow">Selamat datang kembali, agen jaringan</p><h2>Paket data tersesat di Kota Gema!</h2></div></div>
     <div class="sheet-body">
       <p class="lead">Di Sesi 1 kamu menyambungkan jaringan sekolah. Sekarang paket data harus diantar melewati kota yang penuh router. Jelajahi kota, masuk ke setiap gedung, dan temukan rute tercepat. Setiap misi yang selesai menyalakan jalur data di peta.</p>
-      <div class="field"><label for="inName">Nama panggilan</label><input id="inName" maxlength="20" autocomplete="off" placeholder="contoh: Aisyah"></div>
-      <div class="field"><label for="inKelas" id="lblKelas">Kelas</label><input id="inKelas" maxlength="10" autocomplete="off" placeholder="contoh: 8B"></div>
+      <div class="field" id="nameField"><label for="inName">Nama panggilan</label><input id="inName" maxlength="30" autocomplete="off" placeholder="contoh: Aisyah"></div>
+      <div class="field" id="kelasField"><label for="inKelas" id="lblKelas">Kelas</label><input id="inKelas" maxlength="10" autocomplete="off" placeholder="contoh: 8B"></div>
+      <div class="row" id="cekRow" hidden><button class="btn ghost" id="btnCek" type="button" style="color:var(--ink);border-color:#cdbf9b">Cek kelas</button><span id="cekMsg" style="font-size:14px"></span></div>
+      <div class="field" id="pickWrap" hidden><label for="inSiswa">Pilih namamu</label><select id="inSiswa"></select></div>
       <div class="row"><button class="btn dark" id="btnStart" type="button">Mulai Misi</button></div>
     </div>
   </div>
@@ -1472,7 +1481,7 @@ function renderRefleksi(body){
     <div class="field"><label for="rKesan"><b>2.</b> Misi mana yang paling seru, dan kenapa?</label><textarea id="rKesan">${esc(R.kesan)}</textarea></div>
     <div class="field"><label for="rSulit"><b>3.</b> Bagian mana yang masih sulit atau membingungkan?</label><textarea id="rSulit">${esc(R.sulit)}</textarea></div>
     <div class="field"><label for="rAksi"><b>4.</b> Satu hal yang akan kulakukan: memilih "rute terbaik" dalam keputusan minggu ini, atau membantu orang lain di jalan.</label><textarea id="rAksi">${esc(R.aksi)}</textarea></div>
-    <div class="row"><button class="btn dark" id="rSave" type="button">Simpan refleksi</button><button class="btn ghost" id="rCopy" type="button" style="color:var(--ink);border-color:#cdbf9b">Salin laporan untuk guru</button></div>
+    <div class="row"><button class="btn dark" id="rSave" type="button">Simpan refleksi</button><button class="btn ghost" id="rCopy" type="button" style="color:var(--ink);border-color:#cdbf9b">Salin ringkasan (cadangan)</button></div>
     <div id="rOut"></div>`;
   let am=R.am;
   const amFb=()=>{body.querySelector('#amfb').innerHTML=am?`<div class="feedback ok"><span>Pilihan guru: <b>Al-Hadi</b>. Router menunjukkan jalan bagi paket data, tetapi petunjuk sejati datang dari Allah Al-Hadi. Al-Hakim juga tepat bila alasanmu tentang bijak memilih. Sikap yang tumbuh: <b>teliti menghitung, bijak memilih jalan yang benar, peduli memberi jalan bagi orang lain.</b></span></div>`:'';};amFb();
@@ -1491,7 +1500,7 @@ function reportText(r){
 function copyReport(out,r){
   const txt=reportText(r);
   const fallback=()=>{out.innerHTML=`<div class="note">Salin teks ini secara manual (tekan lama / Ctrl+C):<textarea id="rpt" readonly style="min-height:200px;margin-top:6px">${esc(txt)}</textarea></div>`;const t=out.querySelector('#rpt');t.focus();t.select();};
-  try{navigator.clipboard.writeText(txt).then(()=>toast('Laporan tersalin. Tempel di Google Classroom atau LKPD.'),fallback);}catch(e){fallback();}
+  try{navigator.clipboard.writeText(txt).then(()=>toast('Ringkasan tersalin. Tempel di Google Classroom atau LKPD bila diminta guru.'),fallback);}catch(e){fallback();}
 }
 
 /* ================= Rapor ================= */
@@ -1501,12 +1510,12 @@ function openRapor(){
   $('raporBody').innerHTML=`<table class="rapor"><tr><th>Misi</th><th>Status</th><th>Bintang</th></tr>${MN.map(n=>`<tr><td>${n}. ${esc(MISSIONS[n].title)}</td><td>${S.m[n].d?'Selesai':unlocked(n)?'Belum':'Terkunci'}</td><td class="s">${starStr(S.m[n].s)}</td></tr>`).join('')}
     <tr><td>Pos Refleksi</td><td>${S.refl?'Sudah':'Belum'}</td><td>${S.refl?'+50 XP':''}</td></tr>
     <tr><th>Total</th><th>${totalStars()*100+(S.refl?50:0)} XP</th><th>${totalStars()} / 15 ⭐</th></tr></table>
-    <p class="lead" style="font-size:14px">${ONLINE?(S.q.length?'⏳ '+S.q.length+' catatan belum terkirim ke guru. Akan dikirim otomatis saat ada internet.':S.kodeBad?'⚠ Kode kelas salah. Tekan Ganti nama dan tulis ulang kode dari guru.':'☁ Semua progres sudah terkirim ke guru.')+' ':''}Nilai Sesi 2 tetap dari LKPD 5.2.</p>
-    <div class="row"><button class="btn dark" type="button" id="rcopy">Salin laporan</button><button class="btn ghost" type="button" id="rename">Ganti nama</button><button class="btn ghost" type="button" id="wipe">Hapus progres</button></div><div id="confirm"></div>`;
+    <p class="lead" style="font-size:14px">${ONLINE?(S.q.length?'⏳ '+S.q.length+' catatan belum terkirim ke guru. Akan dikirim otomatis saat ada internet.':S.kodeBad?'⚠ Kode kelas salah. Tekan Ganti nama dan tulis ulang kode dari guru.':S.namaBad?'⚠ Namamu belum terdaftar. Tekan Ganti nama dan pilih namamu dari daftar.':'☁ Semua progres sudah terkirim ke guru.')+' ':''}Nilai Sesi 2 tetap dari LKPD 5.2.</p>
+    <div class="row"><button class="btn dark" type="button" id="rcopy">Salin ringkasan (cadangan)</button><button class="btn ghost" type="button" id="rename">Ganti nama</button><button class="btn ghost" type="button" id="wipe">Hapus progres</button></div><div id="confirm"></div>`;
   $('rcopy').onclick=()=>copyReport($('confirm'));
   $('rename').onclick=()=>{closeRapor();showStart();};
   $('wipe').onclick=()=>{$('confirm').innerHTML=`<div class="feedback bad"><span>Yakin menghapus semua bintang Sesi 2 di perangkat ini?</span><div class="row"><button class="btn dark" type="button" id="yes">Ya, hapus</button><button class="btn ghost" type="button" id="no">Batal</button></div></div>`;
-    $('yes').onclick=()=>{const n=S.name,k=S.kelas,kd=S.kode,dv=S.dev,q=S.q;S=fresh();S.name=n;S.kelas=k;S.kode=kd;S.dev=dv;S.q=q;save();refreshHUD();closeRapor();toast('Progres Sesi 2 dihapus.');};
+    $('yes').onclick=()=>{const n=S.name,k=S.kelas,kd=S.kode,dv=S.dev,q=S.q,no=S.no;S=fresh();S.name=n;S.kelas=k;S.kode=kd;S.dev=dv;S.q=q;S.no=no;save();refreshHUD();closeRapor();toast('Progres Sesi 2 dihapus.');};
     $('no').onclick=()=>{$('confirm').innerHTML='';};};
   $('raporClose').focus({preventScroll:true});
 }
@@ -1523,15 +1532,16 @@ function enqueue(item){
 }
 let syncing=false,lastErr='';
 async function syncNow(){
-  if(!ONLINE||syncing||!S.q.length||S.kodeBad||!S.kode)return syncChip();
+  if(!ONLINE||syncing||!S.q.length||S.kodeBad||S.namaBad||!S.kode)return syncChip();
   syncing=true;syncChip();
   try{
     while(S.q.length){
       const it=S.q[0];
-      const payload=Object.assign({},it,{sesi:SESI,kode:S.kode,nama:S.name,perangkat:S.dev});
+      const payload=Object.assign({},it,{sesi:SESI,kode:S.kode,nama:S.name,no:S.no||'',perangkat:S.dev});
       const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
       const j=await r.json();
       if(j&&j.ok){S.q.shift();save();lastErr='';}
+      else if(j&&j.error==='nama'){S.namaBad=true;save();toast('Namamu belum terdaftar di kelas ini. Buka Rapor Misi → Ganti nama, lalu pilih namamu dari daftar.',5000);break;}
       else if(j&&j.error==='kode'){S.kodeBad=true;save();toast('Kode kelas tidak dikenali server. Buka Rapor Misi → Ganti nama, lalu tulis kode dari guru.',5000);break;}
       else{S.q.shift();save();lastErr=(j&&j.error)||'ditolak';}
     }
@@ -1543,26 +1553,64 @@ function syncChip(){
   if(!ONLINE){c.hidden=true;return;}
   c.hidden=false;
   const n=S.q?S.q.length:0;
-  c.textContent=S.kodeBad?'⚠ Kode kelas salah':syncing?'☁ Mengirim…':n?('⏳ '+n+' menunggu sinyal'):'☁ Tersimpan ke guru';
+  c.textContent=S.kodeBad?'⚠ Kode kelas salah':S.namaBad?'⚠ Nama belum terdaftar':syncing?'☁ Mengirim…':n?('⏳ '+n+' menunggu sinyal'):'☁ Tersimpan ke guru';
   c.title=n?'Progres disimpan di perangkat dan akan dikirim otomatis saat internet tersedia.':'Semua progres sudah terkirim ke Google Sheet guru.';
 }
 window.addEventListener('online',syncNow);
 setInterval(()=>{if(S.q&&S.q.length)syncNow();},30000);
 
 /* ================= Start ================= */
-function showStart(){paused=true;$('startOv').hidden=false;$('inName').value=S.name||'';$('inKelas').value=(ONLINE?S.kode:S.kelas)||'';setTimeout(()=>$('inName').focus(),50);}
+let roster=null;
+function showStart(){
+  paused=true;$('startOv').hidden=false;$('inName').value=S.name||'';$('inKelas').value=(ONLINE?S.kode:S.kelas)||'';
+  if(ONLINE){roster=null;$('pickWrap').hidden=true;$('nameField').hidden=true;$('btnStart').hidden=true;$('cekMsg').textContent='';
+    if(S.kode){cekKelas();}else setTimeout(()=>$('inKelas').focus(),50);}
+  else setTimeout(()=>$('inName').focus(),50);
+}
+async function cekKelas(){
+  const kv=$('inKelas').value.trim().toUpperCase();$('inKelas').value=kv;
+  if(!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)){$('cekMsg').textContent='Tulis kode kelas dari guru, contoh: 8B-GN26.';$('inKelas').focus();return;}
+  $('cekMsg').textContent='Mencari kelas…';$('btnCek').disabled=true;
+  try{
+    const r=await fetch(ENDPOINT+'?kode='+encodeURIComponent(kv));const j=await r.json();
+    if(!j.ok){$('cekMsg').textContent='Kode kelas tidak dikenal. Tanyakan ke guru.';roster=null;return;}
+    roster={kode:kv,kelas:j.kelas,siswa:j.siswa||[]};
+    if(roster.siswa.length){
+      const sel=$('inSiswa');sel.innerHTML='<option value="">— pilih namamu —</option>'+roster.siswa.map((s,k)=>`<option value="${k}">${s.no!==''?esc(s.no)+'. ':''}${esc(s.nama)}</option>`).join('');
+      const prev=roster.siswa.findIndex(s=>s.nama===S.name);if(prev>=0)sel.value=String(prev);
+      $('pickWrap').hidden=false;$('nameField').hidden=true;$('cekMsg').textContent='Kelas '+j.kelas+' ditemukan ✓ Pilih namamu.';sel.focus();
+    }else{
+      $('pickWrap').hidden=true;$('nameField').hidden=false;$('cekMsg').textContent='Kelas '+j.kelas+' ditemukan ✓ Daftar nama belum diisi guru, tulis nama panggilanmu.';$('inName').focus();
+    }
+    $('btnStart').hidden=false;
+  }catch(e){$('cekMsg').textContent='Tidak bisa terhubung ke server guru. Periksa internet, lalu tekan Cek kelas lagi.';}
+  finally{$('btnCek').disabled=false;}
+}
+function begin(n){$('startOv').hidden=true;paused=false;refreshHUD();toast('Halo '+n+'! Mulai dari Kantor Pos Data yang berkedip.');cv.focus({preventScroll:true});}
 $('btnStart').onclick=()=>{
+  if(ONLINE){
+    if(!roster||roster.kode!==$('inKelas').value.trim().toUpperCase()){cekKelas();return;}
+    let n='',no='';
+    if(roster.siswa.length){const k=$('inSiswa').value;if(k===''){toast('Pilih namamu dari daftar.');$('inSiswa').focus();return;}n=roster.siswa[+k].nama;no=roster.siswa[+k].no;}
+    else{n=$('inName').value.trim();if(!n){toast('Tulis nama panggilanmu dulu.');$('inName').focus();return;}}
+    S.name=n;S.no=no;S.kode=roster.kode;S.kelas=roster.kelas;S.kodeBad=false;S.namaBad=false;save();syncNow();begin(n);return;
+  }
   const n=$('inName').value.trim();if(!n){$('inName').focus();toast('Tulis nama panggilanmu dulu.');return;}
-  const kv=$('inKelas').value.trim().toUpperCase();
-  if(ONLINE&&!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)){$('inKelas').focus();toast('Tulis kode kelas dari guru, contoh: 8B-GN26.');return;}
-  S.name=n;if(ONLINE){S.kode=kv;S.kelas=kv.split('-')[0];S.kodeBad=false;}else S.kelas=kv;save();syncNow();$('startOv').hidden=true;paused=false;refreshHUD();
-  toast('Halo '+n+'! Mulai dari Kantor Pos Data yang berkedip.');cv.focus({preventScroll:true});
+  S.name=n;S.kelas=$('inKelas').value.trim();save();begin(n);
 };
-$('inKelas').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnStart').click();});
-$('inName').addEventListener('keydown',e=>{if(e.key==='Enter')$('inKelas').focus();});
+$('btnCek').onclick=cekKelas;
+$('inKelas').addEventListener('input',()=>{if(ONLINE&&roster){roster=null;$('pickWrap').hidden=true;$('nameField').hidden=true;$('btnStart').hidden=true;$('cekMsg').textContent='';}});
+$('inKelas').addEventListener('keydown',e=>{if(e.key==='Enter'){ONLINE?cekKelas():$('btnStart').click();}});
+$('inName').addEventListener('keydown',e=>{if(e.key==='Enter'){ONLINE?$('btnStart').click():$('inKelas').focus();}});
+$('inSiswa').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnStart').click();});
 refreshHUD();
-if(ONLINE){$('lblKelas').textContent='Kode kelas dari guru';$('inKelas').placeholder='contoh: 8B-GN26';$('inKelas').maxLength=17;}
+if(ONLINE){
+  $('lblKelas').textContent='Kode kelas dari guru';$('inKelas').placeholder='contoh: 8B-GN26';$('inKelas').maxLength=17;
+  $('nameField').parentNode.insertBefore($('kelasField'),$('nameField'));$('cekRow').hidden=false;
+}
 if(!S.name||(ONLINE&&!S.kode))showStart();else syncNow();
 })();
 
 </script>
+</body>
+</html>
