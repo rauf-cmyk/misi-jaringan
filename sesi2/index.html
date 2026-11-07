@@ -1,0 +1,1568 @@
+<title>Misi Jaringan Sesi 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri&family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+    /* Layout: HUD di atas, peta Kota Paket Data sebagai panggung, kartu misi di bawah; misi terbuka sebagai lembar penuh. Tampilan "HUD malam + peta siang" sama dengan Sesi 1. */
+    :root {
+        --night: #15203a;
+        --panel: #1f2d4f;
+        --panel2: #283a63;
+        --line: #3a4e7d;
+        --paper: #fbf6e9;
+        --paper2: #f1e8d2;
+        --ink: #1b2440;
+        --ink2: #55607e;
+        --cream: #f3ecd8;
+        --muted: #9fabc8;
+        --signal: #ffc93c;
+        --cable: #3b8beb;
+        --ok: #25a866;
+        --bad: #e5484d;
+        --f-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+        --f-body: "Lexend", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+        color-scheme: dark;
+    }
+
+    * {
+        box-sizing: border-box
+    }
+
+    [hidden] {
+        display: none !important
+    }
+
+    html, body {
+        background: var(--night);
+        color: var(--cream)
+    }
+
+    body {
+        font-family: var(--f-body);
+        font-size: 15px;
+        line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 12px 28px
+    }
+
+    button {
+        font: inherit;
+        cursor: pointer
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+        outline: 3px solid var(--signal);
+        outline-offset: 2px
+    }
+
+    .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px
+    }/* HUD */
+    .hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 14px
+    }
+
+    .brand {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+        margin-right: auto;
+        min-width: 0
+    }
+
+    .brand b {
+        font-family: var(--f-display);
+        font-weight: 800;
+        font-size: 22px;
+        color: var(--signal);
+        letter-spacing: .2px
+    }
+
+    .brand span {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .08em
+    }
+
+    .chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--panel2);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 14px;
+        white-space: nowrap
+    }
+
+    .chip strong {
+        font-family: var(--f-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--signal)
+    }
+
+    .btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 14px;
+        font-weight: 600;
+        background: var(--signal);
+        color: #2a1d00
+    }
+
+    .btn.ghost {
+        background: transparent;
+        color: var(--cream);
+        border: 1px solid var(--line)
+    }
+
+    .btn.dark {
+        background: var(--ink);
+        color: var(--paper)
+    }
+
+    .btn.ok {
+        background: var(--ok);
+        color: #fff
+    }
+
+    .btn:disabled {
+        opacity: .45;
+        cursor: not-allowed
+    }/* Stage */
+    .stage {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 3px solid #0d1529;
+        background: #86c766;
+        box-shadow: 0 10px 0 #0d1529
+    }
+
+    #map {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 960/600;
+        touch-action: none;
+        cursor: pointer
+    }
+
+    .enter {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        font-family: var(--f-display);
+        font-size: 18px;
+        font-weight: 800;
+        padding: 8px 22px;
+        border-radius: 999px;
+        border: 3px solid #2a1d00;
+        background: var(--signal);
+        color: #2a1d00;
+        box-shadow: 0 4px 0 #2a1d00;
+        white-space: nowrap;
+        max-width: calc(100% - 24px);
+        overflow: hidden;
+        text-overflow: ellipsis
+    }
+
+    .enter.locked {
+        background: #d6d9e2;
+        border-color: #4b536b;
+        color: #3b4258;
+        box-shadow: 0 4px 0 #4b536b
+    }
+
+    .stage-hint {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        font-size: 13px;
+        color: var(--muted)
+    }
+
+    .stage-hint kbd {
+        font-family: var(--f-mono);
+        background: var(--panel2);
+        border-radius: 5px;
+        padding: 1px 6px;
+        color: var(--cream)
+    }/* Mission list */
+    .missions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 12px
+    }
+
+    .mcard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0
+    }
+
+    .mcard .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px
+    }
+
+    .mcard .tag {
+        font-size: 11px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--muted)
+    }
+
+    .mcard h3 {
+        margin: 0;
+        font-family: var(--f-display);
+        font-size: 19px;
+        line-height: 1.15;
+        color: var(--cream)
+    }
+
+    .mcard p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted)
+    }
+
+    .mcard .go {
+        align-self: flex-start;
+        margin-top: 4px
+    }
+
+    .mcard.locked {
+        opacity: .55
+    }
+
+    .mcard.done {
+        border-color: var(--ok)
+    }
+
+    .stars {
+        font-size: 18px;
+        letter-spacing: 2px;
+        color: var(--signal);
+        white-space: nowrap
+    }
+
+    .stars .off {
+        color: #4a5a85
+    }
+
+    .banner {
+        background: var(--ok);
+        color: #fff;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-weight: 500
+    }
+
+    .banner[hidden] {
+        display: none
+    }
+
+    footer {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 6px;
+        border-top: 1px solid var(--line);
+        padding-top: 10px
+    }/* Overlays */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(8, 13, 28, .78);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+        padding: calc(14px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px))
+    }
+
+    .sheet {
+        background: var(--paper);
+        color: var(--ink);
+        width: 100%;
+        max-width: 920px;
+        border-radius: 18px;
+        border: 3px solid #0d1529;
+        box-shadow: 0 10px 0 #0d1529;
+        overflow: hidden
+    }
+
+    .sheet-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        background: var(--paper2);
+        border-bottom: 2px dashed #d8cba8;
+        padding: 12px 16px
+    }
+
+    .sheet-head h2 {
+        margin: 0;
+        font-family: var(--f-display);
+        font-size: 26px;
+        line-height: 1.1
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--ink2)
+    }
+
+    .sheet-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px
+    }
+
+    .sheet .btn.ghost {
+        color: var(--ink);
+        border-color: #cdbf9b
+    }
+
+    .lead {
+        margin: 0;
+        max-width: 68ch;
+        color: var(--ink)
+    }
+
+    .note {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--ink)
+    }
+
+    .note b {
+        color: var(--ink)
+    }/* Quiz */
+    .progress {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap
+    }
+
+    .progress i {
+        width: 26px;
+        height: 8px;
+        border-radius: 4px;
+        background: #e2d6b8
+    }
+
+    .progress i.ok {
+        background:var(--ok)
+    }
+
+    .progress i.bad {
+        background:var(--bad)
+    }
+
+    .progress i.cur {
+        background: var(--ink)
+    }
+
+    .qcard {
+        background: #fff;
+        border: 3px solid var(--ink);
+        border-radius: 16px;
+        padding: 22px 20px;
+        font-size: 19px;
+        font-weight: 500;
+        line-height: 1.4;
+        box-shadow: 0 6px 0 var(--ink);
+        text-wrap: balance;
+        transition: transform .35s ease, opacity .35s ease
+    }
+
+    .qcard.flyL {
+        transform: translate(-40px, 30px) rotate(-6deg);
+        opacity: 0
+    }
+
+    .qcard.flyR {
+        transform: translate(40px, 30px) rotate(6deg);
+        opacity: 0
+    }
+
+    .bins {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px
+    }
+
+    .bin {
+        border: 3px solid var(--ink);
+        border-radius: 14px;
+        padding: 14px 10px;
+        background: var(--paper2);
+        color: var(--ink);
+        text-align: center;
+        box-shadow: 0 5px 0 var(--ink)
+    }
+
+    .bin b {
+        display: block;
+        font-family: var(--f-display);
+        font-size: 24px;
+        line-height: 1
+    }
+
+    .bin span {
+        font-size: 12.5px;
+        color: var(--ink2)
+    }
+
+    .bin:active {
+        transform: translateY(3px);
+        box-shadow: 0 2px 0 var(--ink)
+    }
+
+    .bin.a {
+        background:#dff0ff
+    }
+
+    .bin.b {
+        background: #fff1c9
+    }
+
+    .feedback {
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px
+    }
+
+    .feedback.ok {
+        background: #dcf5e6;
+        border: 2px solid var(--ok)
+    }
+
+    .feedback.bad {
+        background: #fde3e3;
+        border: 2px solid var(--bad)
+    }
+
+    .feedback b {
+        font-family: var(--f-display);
+        font-size: 20px
+    }
+
+    .result {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 0
+    }
+
+    .result .big {
+        font-family: var(--f-display);
+        font-size: 44px;
+        line-height: 1;
+        color: var(--ink)
+    }
+
+    .result .stars {
+        font-size: 34px;
+        color: #e0a400
+    }
+
+    .result .stars .off {
+        color: #d9ccaa
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center
+    }/* SVG sims */
+    .simbox {
+        background: #eef4fb;
+        border: 2px solid #c9d7ea;
+        border-radius: 14px;
+        overflow: hidden
+    }
+
+    .simbox svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none
+    }
+
+    .seg {
+        display: inline-flex;
+        border: 2px solid var(--ink);
+        border-radius: 10px;
+        overflow: hidden
+    }
+
+    .seg button {
+        border: 0;
+        background: #fff;
+        color: var(--ink);
+        padding: 7px 14px;
+        font-weight: 600
+    }
+
+    .seg button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--paper)
+    }
+
+    .ctrl {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px
+    }
+
+    .ctrl .box {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0
+    }
+
+    .ctrl .box label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink2)
+    }
+
+    .log {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 14px
+    }
+
+    .log div {
+        padding: 8px 12px;
+        border-radius: 10px
+    }
+
+    .log .ok {
+        background:#dcf5e6
+    }
+
+    .log .bad {
+        background:#fde3e3
+    }
+
+    .log .warn {
+        background: #fff1c9
+    }
+
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        font-size: 13px;
+        color: var(--ink2)
+    }
+
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px
+    }
+
+    .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center
+    }
+
+    .toolbar .btn {
+        padding: 7px 12px;
+        font-size: 14px
+    }
+
+    select {
+        font: inherit;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        color: var(--ink)
+    }/* Kamus */
+    .kamus {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px
+    }
+
+    .term {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 12px
+    }
+
+    .term b {
+        font-family: var(--f-display);
+        font-size: 19px;
+        display: block;
+        line-height: 1.1;
+        margin-bottom: 4px
+    }
+
+    .term p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--ink)
+    }
+
+    .term small {
+        display: block;
+        margin-top: 6px;
+        color: var(--ink2);
+        font-size: 12.5px
+    }/* Start + rapor */
+    .start {
+        max-width: 560px
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px
+    }
+
+    .field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink2)
+    }
+
+    .field input {
+        font: inherit;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        color: var(--ink)
+    }
+
+    table.rapor {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px
+    }
+
+    table.rapor td, table.rapor th {
+        padding: 8px 6px;
+        border-bottom: 1px solid #e3d6b4;
+        text-align: left
+    }
+
+    table.rapor td.s {
+        color: #e0a400;
+        font-size: 18px;
+        white-space: nowrap
+    }
+
+    .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 80;
+        background: var(--ink);
+        color: var(--paper);
+        border: 2px solid var(--signal);
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-weight: 500;
+        max-width: min(520px, calc(100% - 32px));
+        text-align: center
+    }
+
+    @media (max-width: 560px) {
+        .brand b {
+            font-size: 19px
+        }
+
+        .qcard {
+            font-size: 17px;
+            padding: 16px
+        }
+
+        .sheet-head h2 {
+            font-size: 22px
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            transition: none !important;
+            animation: none !important
+        }
+    }
+</style>
+<style>
+/* Tambahan Sesi 2: kota paket data, graf misi, kartu paket */
+.mcard.refl{border-color:var(--signal)}
+.feedback span b,.feedback span strong{font-family:inherit;font-size:inherit}
+table.rt,table.dj{color:var(--ink);font-family:var(--f-body)}
+table.rt th,table.dj th{color:var(--ink2);font-size:13px}
+.pk{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;border:3px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);padding:6px 10px;box-shadow:0 4px 0 var(--ink);min-width:86px;font-family:var(--f-mono);font-size:15px;line-height:1.2}
+.pk small{font-family:var(--f-body);font-size:11px;color:var(--ink2)}
+.pk b{font-family:var(--f-display);font-size:18px}
+.pk.used{opacity:.25;pointer-events:none}
+.pk.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pkrow{display:flex;flex-wrap:wrap;gap:10px}
+.msgbox{background:#fff;border:2px dashed #cdbf9b;border-radius:12px;padding:12px 14px;font-family:var(--f-mono);font-size:22px;min-height:56px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.numgrid{display:flex;flex-wrap:wrap;gap:8px}
+.numgrid button{width:52px;height:46px;border-radius:10px;border:3px solid var(--ink);background:var(--paper2);color:var(--ink);font-family:var(--f-display);font-size:20px;font-weight:800;box-shadow:0 3px 0 var(--ink)}
+.numgrid button:disabled{opacity:.35}
+table.rt{width:100%;border-collapse:collapse;font-size:15px}
+table.rt th,table.rt td{padding:7px 6px;border-bottom:1px solid #e3d6b4;text-align:left;vertical-align:middle}
+table.rt td.r{font-family:var(--f-mono);font-size:15px}
+table.rt input{width:84px;font:inherit;font-family:var(--f-mono);padding:6px 8px;border-radius:8px;border:2px solid var(--ink);background:#fff;color:var(--ink)}
+table.rt input.ok{border-color:var(--ok);background:#dcf5e6}
+table.rt input.bad{border-color:var(--bad);background:#fde3e3}
+table.rt tr.hl td{background:#fff1c9}
+.choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.choice button{border:3px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);padding:10px 12px;font-family:var(--f-mono);font-size:15px;text-align:left;box-shadow:0 3px 0 var(--ink)}
+.choice button.ok{background:#dcf5e6;border-color:var(--ok)}
+.choice button.bad{background:#fde3e3;border-color:var(--bad)}
+.event{background:var(--ink);color:var(--paper);border-radius:12px;padding:10px 14px;font-size:15px}
+.event b{color:var(--signal);font-family:var(--f-display);font-size:18px}
+.split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:720px){.split{grid-template-columns:minmax(0,1fr)}}
+.pathbox{background:#fff;border:2px solid #e3d6b4;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.pathbox .p{font-family:var(--f-mono);font-size:16px;word-break:break-word}
+.pathbox .t{font-family:var(--f-display);font-size:32px;font-weight:800;line-height:1}
+table.dj{width:100%;border-collapse:collapse;font-size:15px}
+table.dj th,table.dj td{padding:6px;border-bottom:1px solid #e3d6b4;text-align:left}
+table.dj td{font-family:var(--f-mono)}
+table.dj tr.fin td{background:#dcf5e6}
+table.dj tr.upd td{background:#fff1c9}
+table.dj tr{cursor:pointer}
+.ayat{background:#fff;border:2px solid #e3d6b4;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ayat .ar{font-family:"Amiri","Traditional Arabic",serif;font-size:30px;direction:rtl;text-align:right;line-height:1.7;color:var(--ink)}
+.amg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.amg button{border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);padding:10px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 4px 0 var(--ink)}
+.amg button .ar{font-family:"Amiri","Traditional Arabic",serif;font-size:34px;line-height:1.5}
+.amg button b{font-family:var(--f-display);font-size:19px}
+.amg button span{font-size:13px;color:var(--ink2)}
+.amg button[aria-pressed="true"]{background:#fff1c9;border-color:#b07a00}
+textarea{font:inherit;padding:10px 12px;border-radius:10px;border:2px solid var(--ink);background:#fff;color:var(--ink);min-height:72px;resize:vertical;width:100%}
+.kait{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.kait .term b{color:var(--ink)}
+</style>
+<div class="wrap">
+  <header class="hud">
+    <div class="brand"><b>Misi Jaringan</b><span>Sesi 2 · Routing &amp; Rute Tercepat</span></div>
+    <div class="chip">👤 <span id="hudName">Tamu</span></div>
+    <div class="chip">⭐ <strong id="hudStars">0</strong>/15</div>
+    <div class="chip">XP <strong id="hudXP">0</strong></div>
+    <div class="chip" id="hudSync" hidden></div>
+    <button class="btn ghost" id="btnRapor" type="button">Rapor Misi</button>
+  </header>
+  <section class="stage" aria-label="Peta Kota Paket Data">
+    <canvas id="map" width="960" height="600" tabindex="0" aria-label="Peta Kota Paket Data. Gerakkan karakter dengan tombol panah atau ketuk gedung tujuan."></canvas>
+    <button class="enter" id="enterBtn" type="button" hidden>Masuk</button>
+  </section>
+  <div class="stage-hint">
+    <span>Gerak: <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> atau <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+    <span>Atau ketuk/klik gedung untuk berjalan ke pintunya</span>
+    <span>Masuk gedung: <kbd>Enter</kbd></span>
+  </div>
+  <div class="banner" id="doneBanner" hidden>🎉 Semua misi Sesi 2 selesai! Mampir ke <b>Masjid</b> untuk refleksi, lalu kerjakan <b>LKPD 5.2</b> dengan pemahamanmu sendiri.</div>
+  <section class="missions" id="missionList" aria-label="Daftar misi"></section>
+  <footer>
+    <span>Informatika Kelas VIII · SMIT Gema Nurani · Media latihan mandiri, nilai tetap dari LKPD</span>
+    <span>Created By Ai Prompted By Guru Belajar Digital (Rauf)</span>
+  </footer>
+</div>
+
+<div class="overlay" id="startOv" hidden>
+  <div class="sheet start">
+    <div class="sheet-head"><div><p class="eyebrow">Selamat datang kembali, agen jaringan</p><h2>Paket data tersesat di Kota Gema!</h2></div></div>
+    <div class="sheet-body">
+      <p class="lead">Di Sesi 1 kamu menyambungkan jaringan sekolah. Sekarang paket data harus diantar melewati kota yang penuh router. Jelajahi kota, masuk ke setiap gedung, dan temukan rute tercepat. Setiap misi yang selesai menyalakan jalur data di peta.</p>
+      <div class="field"><label for="inName">Nama panggilan</label><input id="inName" maxlength="20" autocomplete="off" placeholder="contoh: Aisyah"></div>
+      <div class="field"><label for="inKelas" id="lblKelas">Kelas</label><input id="inKelas" maxlength="10" autocomplete="off" placeholder="contoh: 8B"></div>
+      <div class="row"><button class="btn dark" id="btnStart" type="button">Mulai Misi</button></div>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="missionOv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="sheet-head"><div><p class="eyebrow" id="mEyebrow"></p><h2 id="mTitle"></h2></div><button class="btn ghost" id="mClose" type="button">← Kembali ke peta</button></div>
+    <div class="sheet-body" id="mBody"></div>
+  </div>
+</div>
+<div class="overlay" id="raporOv" hidden>
+  <div class="sheet start">
+    <div class="sheet-head"><div><p class="eyebrow">Rapor Misi · Sesi 2</p><h2 id="raporName"></h2></div><button class="btn ghost" id="raporClose" type="button">Tutup</button></div>
+    <div class="sheet-body" id="raporBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+/* ===== PENGATURAN GURU =====
+   Tempel URL Web App Google Apps Script di antara tanda kutip.
+   Kosongkan ('') bila tidak ingin mengirim progres ke Google Sheet. */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+const SESI='Sesi 2 Routing';
+/* ============================ */
+const KEY='misiJaringan8.sesi2.v1';
+const ONLINE=!!ENDPOINT;
+const MN=[1,2,3,4,5];
+const fresh=()=>({name:'',kelas:'',m:{1:{s:0,d:false},2:{s:0,d:false},3:{s:0,d:false},4:{s:0,d:false},5:{s:0,d:false}},refl:null});
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+if(!S||!S.m)S=fresh();
+if(!S.dev)S.dev='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+if(!Array.isArray(S.q))S.q=[];
+MN.forEach(n=>{if(!S.m[n])S.m[n]={s:0,d:false};});
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const starStr=n=>'★'.repeat(n)+'<span class="off">'+'★'.repeat(3-n)+'</span>';
+const starsBy=w=>w===0?3:w<=2?2:1;
+let toastT=0;
+function toast(msg,ms){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||2600);}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------------- Missions meta ---------------- */
+const MISSIONS={
+ 1:{title:'Fakta atau Mitos Paket?',room:'Kantor Pos Data',desc:'Uji pemahamanmu tentang paket data, router, dan routing.'},
+ 2:{title:'Pecah & Susun Paket',room:'Menara Paket',desc:'Kirim pesan, lihat paket menempuh jalur berbeda, lalu susun ulang dengan nomor urut.'},
+ 3:{title:'Hitung Bobot Rute',room:'Balai Graf',desc:'Jumlahkan bobot tiap rute pada graf, lalu temukan shortest path.'},
+ 4:{title:'Misi Ambulans',room:'Rumah Sakit',desc:'Antar ambulans lewat rute tercepat, walau ada banjir dan macet.'},
+ 5:{title:'Router Pintar',room:'Pusat Kendali',desc:'Jadilah router: jalankan langkah algoritma Dijkstra satu per satu.'}
+};
+const unlocked=n=>n<=1||n===6||(S.m[n-1]&&S.m[n-1].d);
+const allDone=()=>MN.every(n=>S.m[n].d);
+const totalStars=()=>MN.reduce((a,n)=>a+S.m[n].s,0);
+function refreshHUD(){
+  $('hudName').textContent=S.name?(S.name+(S.kelas?' · '+S.kelas:'')):'Tamu';
+  $('hudStars').textContent=totalStars();
+  $('hudXP').textContent=totalStars()*100+(S.refl?50:0);
+  $('doneBanner').hidden=!allDone();
+  syncChip();
+  const L=$('missionList');L.innerHTML='';
+  MN.forEach(n=>{
+    const m=MISSIONS[n],st=S.m[n],ul=unlocked(n);
+    const c=document.createElement('article');
+    c.className='mcard'+(ul?'':' locked')+(st.d?' done':'');
+    c.innerHTML=`<div class="top"><span class="tag">Misi ${n} · ${esc(m.room)}</span><span class="stars">${starStr(st.s)}</span></div><h3>${esc(m.title)}</h3><p>${ul?esc(m.desc):'🔒 Selesaikan Misi '+(n-1)+' dulu.'}</p>`;
+    if(ul){const b=document.createElement('button');b.type='button';b.className='btn go';b.textContent=st.d?'Ulangi misi':'Jalan ke sini';b.onclick=()=>walkToRoom(ROOMS.find(r=>r.mission===n));c.appendChild(b);}
+    L.appendChild(c);
+  });
+  [[0,'Perpustakaan','📖','Kamus Routing','Lupa arti paket, router, bobot, atau Dijkstra? Mampir ke perpustakaan.',''],
+   [6,'Masjid','🕌','Pos Refleksi',S.refl?'Refleksimu sudah tersimpan. Kamu boleh memperbaruinya.':'Tutup petualangan dengan refleksi: ayat, Asmaul Husna, kesan, dan kesulitanmu.',' refl']].forEach(x=>{
+    const k=document.createElement('article');k.className='mcard'+x[5]+(x[0]===6&&S.refl?' done':'');
+    k.innerHTML=`<div class="top"><span class="tag">${x[1]}</span><span class="stars">${x[2]}</span></div><h3>${x[3]}</h3><p>${x[4]}</p>`;
+    const kb=document.createElement('button');kb.type='button';kb.className='btn ghost go';kb.textContent='Jalan ke sini';kb.onclick=()=>walkToRoom(ROOMS.find(r=>r.mission===x[0]));k.appendChild(kb);L.appendChild(k);
+  });
+}
+function completeMission(n,stars,err){
+  const st=S.m[n],first=!st.d;st.d=true;st.s=Math.max(st.s,stars);
+  enqueue({jenis:'misi',misi:n,judul:MISSIONS[n].title,bintang:stars,kesalahan:err||0});
+  save();refreshHUD();
+  if(first)flash=1.6;
+  toast(first?`Misi ${n} selesai! Jalur data di kota menyala ⚡`:`Misi ${n} diulang. Bintang terbaik disimpan.`);
+}
+
+/* ---------------- MAP ---------------- */
+const cv=$('map'),ctx=cv.getContext('2d');
+const W=960,H=600;let dpr=1;
+function fitCanvas(){dpr=Math.min(2,window.devicePixelRatio||1);cv.width=W*dpr;cv.height=H*dpr;}
+fitCanvas();window.addEventListener('resize',fitCanvas);
+const ROAD={y1:236,y2:344,cy:290};
+const ROOMS=[
+ {id:'lib',name:'Perpustakaan',x:40,y:40,w:170,h:120,roof:'#b5603d',wall:'#f2d9b8',door:'bottom',mission:0},
+ {id:'pos',name:'Kantor Pos Data',x:250,y:30,w:210,h:130,roof:'#d0573b',wall:'#fbeee0',door:'bottom',mission:1},
+ {id:'menara',name:'Menara Paket',x:500,y:40,w:190,h:120,roof:'#3d6fb6',wall:'#e8f0fb',door:'bottom',mission:2},
+ {id:'graf',name:'Balai Graf',x:730,y:40,w:190,h:120,roof:'#7a4fa0',wall:'#efe6f6',door:'bottom',mission:3},
+ {id:'rs',name:'Rumah Sakit',x:50,y:410,w:220,h:130,roof:'#e5484d',wall:'#fff5f5',door:'top',mission:4},
+ {id:'noc',name:'Pusat Kendali',x:330,y:420,w:220,h:120,roof:'#33415e',wall:'#dfe4ef',door:'top',mission:5},
+ {id:'masjid',name:'Masjid',x:630,y:410,w:230,h:130,roof:'#2f8a63',wall:'#e6f3ea',door:'top',mission:6}
+];
+ROOMS.forEach(r=>{const cx=r.x+r.w/2;
+  r.zone=r.door==='bottom'?{x:cx-30,y:r.y+r.h+2,w:60,h:36}:{x:cx-30,y:r.y-38,w:60,h:36};
+  r.doorPt={x:cx,y:r.door==='bottom'?r.y+r.h+20:r.y-20};});
+const OBST=ROOMS.map(r=>({x:r.x,y:r.y,w:r.w,h:r.h}));
+const TREES=[{x:230,y:110},{x:480,y:112},{x:710,y:110},{x:942,y:120},{x:300,y:575},{x:590,y:578},{x:900,y:578},{x:22,y:560}];
+TREES.forEach(t=>OBST.push({x:t.x-12,y:t.y-10,w:24,h:18}));
+const BOUND={x1:8,y1:8,x2:952,y2:592};
+const P={x:480,y:ROAD.cy,r:11,tx:null,ty:null,dir:1,walk:0,moving:false};
+let paused=false,flash=0,nearRoom=null;const keys={};
+const dots=[];for(let i=0;i<160;i++)dots.push({x:Math.random()*W,y:Math.random()*H,c:Math.random()<.5?'#7fbf5c':'#a3dc7e'});
+/* routers on the road + data cables */
+const ROUTERS=[{x:125,n:'R1'},{x:355,n:'R2'},{x:595,n:'R3'},{x:825,n:'R4'}];
+function polyLen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L;}
+function polyAt(p,d){for(let i=1;i<p.length;i++){const l=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);if(d<=l||i===p.length-1){const k=l?Math.min(1,d/l):0;return [p[i-1][0]+(p[i][0]-p[i-1][0])*k,p[i-1][1]+(p[i][1]-p[i-1][1])*k];}d-=l;}return p[0];}
+const LANE=ROAD.cy-26;
+const CABLES=[];
+ROOMS.forEach(r=>{const x=r.x+r.w/2;const yd=r.door==='bottom'?r.y+r.h:r.y;
+  CABLES.push({pts:[[x,yd],[x,LANE+ (r.door==='bottom'?0:52)]],on:()=>r.mission===0?totalStars()>0:r.mission===6?!!S.refl:S.m[r.mission].d});});
+CABLES.push({pts:[[60,LANE],[900,LANE]],on:()=>totalStars()>0});
+CABLES.push({pts:[[900,LANE+52],[60,LANE+52]],on:()=>MN.filter(n=>S.m[n].d).length>=3});
+CABLES.forEach(c=>c.len=polyLen(c.pts));
+const VANS=[{lane:0,x:100,sp:70,n:1,c:'#3b8beb'},{lane:0,x:560,sp:70,n:2,c:'#25a866'},{lane:1,x:760,sp:-55,n:3,c:'#e5484d'},{lane:1,x:260,sp:-55,n:4,c:'#7a4fa0'}];
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawGround(){
+  ctx.fillStyle='#8fcf6b';ctx.fillRect(0,0,W,H);
+  dots.forEach(d=>{ctx.fillStyle=d.c;ctx.fillRect(d.x,d.y,3,3);});
+  // sidewalks to doors
+  ctx.fillStyle='#e9d7a9';
+  ROOMS.forEach(r=>{const cx=r.x+r.w/2;if(r.door==='bottom')ctx.fillRect(cx-24,r.y+r.h,48,ROAD.y1-(r.y+r.h)+4);else ctx.fillRect(cx-24,ROAD.y2-4,48,r.y-ROAD.y2+4);});
+  // sidewalk band + road
+  rr(10,ROAD.y1-14,940,ROAD.y2-ROAD.y1+28,20);ctx.fill();
+  ctx.fillStyle='#59627a';rr(18,ROAD.y1,924,ROAD.y2-ROAD.y1,14);ctx.fill();
+  ctx.strokeStyle='#f3ecd8';ctx.lineWidth=3;ctx.setLineDash([18,14]);ctx.beginPath();ctx.moveTo(30,ROAD.cy);ctx.lineTo(930,ROAD.cy);ctx.stroke();ctx.setLineDash([]);
+  // zebra at each door
+  ctx.fillStyle='rgba(243,236,216,.85)';
+  ROOMS.forEach(r=>{const cx=r.x+r.w/2;const y0=r.door==='bottom'?ROAD.y1+4:ROAD.y2-22;for(let k=-18;k<=12;k+=10)ctx.fillRect(cx+k,y0,6,18);});
+  ctx.fillStyle='rgba(243,236,216,.35)';ctx.font='800 18px "Baloo 2", sans-serif';ctx.textAlign='left';ctx.fillText('JL. PAKET DATA',30,ROAD.y2-10);
+  ctx.textAlign='right';ctx.fillText('JL. DIJKSTRA',930,ROAD.y1+22);
+}
+function drawRouter(rt,t){
+  const x=rt.x,y=ROAD.cy,on=totalStars()>0;
+  ctx.fillStyle='#3a4466';ctx.beginPath();ctx.arc(x,y,24,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#f3ecd8';ctx.lineWidth=2;ctx.stroke();
+  ctx.strokeStyle='#2a1d00';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x-8,y-4);ctx.lineTo(x-12,y-16);ctx.moveTo(x+8,y-4);ctx.lineTo(x+12,y-16);ctx.stroke();
+  ctx.fillStyle='#ffc93c';rr(x-16,y-5,32,14,4);ctx.fill();ctx.strokeStyle='#2a1d00';ctx.lineWidth=2;ctx.stroke();
+  for(let k=0;k<3;k++){ctx.fillStyle=on&&((t*3+k)%3<1.5)?'#7CFFB2':'#2b6b46';ctx.beginPath();ctx.arc(x-8+k*6,y+2,2,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle='#fff';ctx.font='800 12px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.fillText(rt.n,x,y+22);
+}
+function drawVan(v){
+  const y=v.lane===0?ROAD.cy-26:ROAD.cy+26,dir=v.sp>0?1:-1,x=v.x;
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(x-22,y+9,44,5);
+  ctx.fillStyle=v.c;rr(x-22,y-11,44,22,5);ctx.fill();
+  ctx.fillStyle='#bfe0f5';ctx.fillRect(x+dir*10-(dir>0?0:8),y-8,8,10);
+  ctx.fillStyle='#fff';ctx.font='800 12px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.fillText('#'+v.n,x-dir*5,y+4);
+  ctx.fillStyle='#1b2440';[-13,13].forEach(o=>{ctx.beginPath();ctx.arc(x+o,y+11,4,0,Math.PI*2);ctx.fill();});
+}
+function drawTree(t){ctx.fillStyle='rgba(0,0,0,.15)';ctx.beginPath();ctx.ellipse(t.x,t.y+8,20,7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#7a5532';ctx.fillRect(t.x-4,t.y-6,8,14);ctx.fillStyle='#3f9a4e';ctx.beginPath();ctx.arc(t.x,t.y-18,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='#57b665';ctx.beginPath();ctx.arc(t.x-6,t.y-24,10,0,Math.PI*2);ctx.fill();}
+function roomState(r){if(r.mission===0||r.mission===6)return{locked:false,done:r.mission===6&&!!S.refl};return{locked:!unlocked(r.mission),done:S.m[r.mission].d};}
+function drawRoom(r,t){
+  const {locked,done}=roomState(r);
+  ctx.fillStyle='rgba(0,0,0,.18)';rr(r.x+6,r.y+8,r.w,r.h,8);ctx.fill();
+  ctx.fillStyle=r.wall;rr(r.x,r.y,r.w,r.h,8);ctx.fill();
+  ctx.fillStyle=r.roof;rr(r.x,r.y,r.w,34,8);ctx.fill();ctx.fillRect(r.x,r.y+20,r.w,14);
+  const cx=r.x+r.w/2;
+  if(r.id==='masjid'){ // dome + minaret
+    ctx.fillStyle='#2f8a63';ctx.beginPath();ctx.arc(cx,r.y+2,26,Math.PI,0);ctx.fill();
+    ctx.fillStyle='#ffc93c';ctx.fillRect(cx-1.5,r.y-36,3,14);
+    ctx.fillStyle='#e6f3ea';ctx.fillRect(r.x+r.w-22,r.y-30,14,44);ctx.fillStyle='#2f8a63';ctx.beginPath();ctx.moveTo(r.x+r.w-24,r.y-30);ctx.lineTo(r.x+r.w-15,r.y-46);ctx.lineTo(r.x+r.w-6,r.y-30);ctx.fill();
+  }
+  if(r.id==='rs'){ctx.fillStyle='#fff';ctx.fillRect(r.x+18,r.y+46,30,10);ctx.fillRect(r.x+28,r.y+36,10,30);ctx.fillStyle='#e5484d';ctx.fillRect(r.x+20,r.y+48,26,6);ctx.fillRect(r.x+30,r.y+38,6,26);}
+  if(r.id==='menara'){ctx.strokeStyle='#55607e';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(r.x+r.w-40,r.y);ctx.lineTo(r.x+r.w-28,r.y-34);ctx.lineTo(r.x+r.w-16,r.y);ctx.stroke();ctx.fillStyle=done?'#ffc93c':'#e5484d';ctx.beginPath();ctx.arc(r.x+r.w-28,r.y-36,4,0,Math.PI*2);ctx.fill();}
+  const wy=r.door==='bottom'?r.y+48:r.y+r.h-44;
+  for(let x=r.x+16;x<r.x+r.w-30;x+=36){if(Math.abs(x+12-cx)<30)continue;if(r.id==='rs'&&x<r.x+56)continue;
+    ctx.fillStyle=(r.id==='noc'&&done)?'#9ee6ff':'#bfe0f5';ctx.fillRect(x,wy,24,20);ctx.strokeStyle='#5b6b86';ctx.lineWidth=2;ctx.strokeRect(x,wy,24,20);}
+  const dy=r.door==='bottom'?r.y+r.h-34:r.y+34;
+  ctx.fillStyle=locked?'#6b6f7c':'#8a5a33';ctx.fillRect(cx-14,dy,28,34);ctx.fillStyle='#ffc93c';ctx.fillRect(cx+6,dy+16,4,4);
+  ctx.fillStyle='#fff';ctx.font='800 17px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.fillText(r.name,cx,r.y+24);
+  const bx=r.x+r.w-14,by=r.y+r.h-14;
+  if(r.mission>=1&&r.mission<=5){
+    ctx.fillStyle=done?'#25a866':locked?'#6b6f7c':'#ffc93c';ctx.beginPath();ctx.arc(bx,by,13,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=done||locked?'#fff':'#2a1d00';ctx.font='800 15px "Baloo 2", sans-serif';ctx.fillText(done?'✓':locked?'🔒':String(r.mission),bx,by+5);
+    if(!done&&!locked){const a=.5+.5*Math.sin(t*4);ctx.strokeStyle='rgba(255,201,60,'+a+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(bx,by,17+3*a,0,Math.PI*2);ctx.stroke();}
+  }else{ctx.font='18px sans-serif';ctx.fillText(r.mission===0?'📖':(done?'✅':'🕌'),bx-2,by+6);
+    if(r.mission===6&&allDone()&&!S.refl){const a=.5+.5*Math.sin(t*4);ctx.strokeStyle='rgba(255,201,60,'+a+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(bx-2,by,17+3*a,0,Math.PI*2);ctx.stroke();}}
+}
+function drawCables(t){
+  CABLES.forEach(c=>{const on=c.on();if(!on)return;ctx.lineCap='round';
+    ctx.strokeStyle='rgba(255,201,60,.28)';ctx.lineWidth=8;ctx.beginPath();c.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();
+    ctx.strokeStyle='#ffc93c';ctx.lineWidth=2.5;ctx.beginPath();c.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();
+    const n=Math.max(1,Math.round(c.len/160));
+    for(let k=0;k<n;k++){const d=((t*90+k*c.len/n)%c.len);const q=polyAt(c.pts,d);ctx.fillStyle='#fff';ctx.fillRect(q[0]-4,q[1]-4,8,8);ctx.strokeStyle='#2a1d00';ctx.lineWidth=1.5;ctx.strokeRect(q[0]-4,q[1]-4,8,8);}
+  });
+}
+function drawPlayer(){
+  const x=P.x,y=P.y,ph=P.moving?Math.sin(P.walk*12):0;
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(x,y+14,13,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1d2b4f';ctx.fillRect(x-7,y+2,5,12+ph*2);ctx.fillRect(x+2,y+2,5,12-ph*2);
+  ctx.fillStyle='#ffc93c';rr(x-10,y-12,20,18,5);ctx.fill();ctx.strokeStyle='#1b2440';ctx.lineWidth=1.5;ctx.stroke();
+  // courier bag
+  ctx.fillStyle='#8a5a33';rr(x-P.dir*14-5,y-6,10,10,2);ctx.fill();
+  ctx.fillStyle='#f1c27d';ctx.beginPath();ctx.arc(x,y-22,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1b2440';ctx.beginPath();ctx.arc(x,y-25,10.5,Math.PI,0);ctx.fill();ctx.fillRect(x+(P.dir>0?2:-14),y-27,12,4);
+  ctx.fillRect(x+P.dir*3-1.5,y-22,3,3);ctx.fillRect(x+P.dir*3+4*P.dir-1.5,y-22,3,3);
+  if(S.name){ctx.font='600 12px Lexend, sans-serif';ctx.textAlign='center';const w=ctx.measureText(S.name).width+12;ctx.fillStyle='rgba(27,36,64,.85)';rr(x-w/2,y-52,w,18,9);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(S.name,x,y-39);}
+}
+function drawPrompt(t){
+  if(!nearRoom)return;const r=nearRoom,{locked}=roomState(r);
+  const txt=locked?'🔒 Selesaikan Misi '+(r.mission-1)+' dulu':'Tekan Enter untuk masuk';
+  ctx.font='600 13px Lexend, sans-serif';const w=ctx.measureText(txt).width+18;
+  const x=r.doorPt.x,y=(r.door==='bottom'?r.y+r.h+58:r.y-46)+Math.sin(t*5)*2;
+  ctx.fillStyle=locked?'#e3e6ee':'#ffc93c';rr(x-w/2,y-14,w,26,13);ctx.fill();ctx.strokeStyle='#1b2440';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#1b2440';ctx.textAlign='center';ctx.fillText(txt,x,y+4);
+}
+function hit(x,y){
+  if(x-P.r<BOUND.x1||x+P.r>BOUND.x2||y-P.r<BOUND.y1||y+P.r>BOUND.y2)return true;
+  for(const o of OBST){if(x+P.r>o.x&&x-P.r<o.x+o.w&&y+8>o.y&&y-6<o.y+o.h)return true;}
+  return false;
+}
+const inRect=(x,y,z)=>x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;
+let last=performance.now(),T=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  if(!paused){
+    let vx=0,vy=0;
+    if(keys.ArrowLeft||keys.a)vx-=1;if(keys.ArrowRight||keys.d)vx+=1;if(keys.ArrowUp||keys.w)vy-=1;if(keys.ArrowDown||keys.s)vy+=1;
+    if(vx||vy){P.tx=null;}else if(P.tx!==null){const dx=P.tx-P.x,dy=P.ty-P.y,d=Math.hypot(dx,dy);if(d<4)P.tx=null;else{vx=dx/d;vy=dy/d;}}
+    const m=Math.hypot(vx,vy);P.moving=m>0;
+    if(m){vx/=m;vy/=m;const sp=190*dt,ox=P.x,oy=P.y;
+      if(!hit(P.x+vx*sp,P.y))P.x+=vx*sp;if(!hit(P.x,P.y+vy*sp))P.y+=vy*sp;
+      if(vx)P.dir=vx>0?1:-1;P.walk+=dt;if(P.tx!==null&&Math.hypot(P.x-ox,P.y-oy)<.01)P.tx=null;}
+    const nr=ROOMS.find(r=>inRect(P.x,P.y,r.zone))||null;if(nr!==nearRoom){nearRoom=nr;updateEnter();}
+    VANS.forEach(v=>{v.x+=v.sp*dt;if(v.x>990)v.x=-30;if(v.x<-30)v.x=990;});
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawGround();
+  TREES.filter(t=>t.y<P.y).forEach(drawTree);
+  drawCables(T);
+  VANS.forEach(drawVan);
+  ROUTERS.forEach(r=>drawRouter(r,T));
+  ROOMS.forEach(r=>drawRoom(r,T));
+  drawPlayer();
+  TREES.filter(t=>t.y>=P.y).forEach(drawTree);
+  drawPrompt(T);
+  if(flash>0){ctx.fillStyle='rgba(255,201,60,'+(flash*.25)+')';ctx.fillRect(0,0,W,H);flash-=dt;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function updateEnter(){
+  const b=$('enterBtn');if(!nearRoom){b.hidden=true;return;}
+  const r=nearRoom,{locked}=roomState(r);b.hidden=false;b.classList.toggle('locked',locked);
+  b.textContent=locked?'🔒 '+r.name+' terkunci':'Masuk '+r.name+(r.mission>=1&&r.mission<=5?' · Misi '+r.mission:'');
+}
+function enterRoom(r){if(!r)return;if(roomState(r).locked){toast('Gedung ini masih terkunci. Selesaikan Misi '+(r.mission-1)+' dulu.');return;}openMission(r.mission);}
+function walkToRoom(r){if(!r)return;P.tx=r.doorPt.x;P.ty=r.doorPt.y;cv.focus({preventScroll:true});cv.scrollIntoView({behavior:'smooth',block:'center'});}
+$('enterBtn').onclick=()=>enterRoom(nearRoom);
+const typing=()=>['INPUT','TEXTAREA'].includes(document.activeElement.tagName);
+window.addEventListener('keydown',e=>{
+  if(paused)return;const k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(k)){keys[k]=true;e.preventDefault();}
+  else if(['w','a','s','d'].includes(k)&&!typing()){keys[k]=true;}
+  else if(k==='Enter'&&nearRoom&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();enterRoom(nearRoom);}
+});
+window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false;});
+window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+cv.addEventListener('pointerdown',e=>{
+  if(paused)return;const rc=cv.getBoundingClientRect();
+  const x=(e.clientX-rc.left)/rc.width*W,y=(e.clientY-rc.top)/rc.height*H;
+  const r=ROOMS.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);
+  if(r){if(nearRoom===r){enterRoom(r);return;}P.tx=r.doorPt.x;P.ty=r.doorPt.y;}
+  else{P.tx=Math.max(BOUND.x1+P.r,Math.min(BOUND.x2-P.r,x));P.ty=Math.max(BOUND.y1+P.r,Math.min(BOUND.y2-P.r,y));}
+});
+
+/* ---------------- Mission sheet ---------------- */
+let cleanup=null;
+function openMission(n){
+  paused=true;for(const k in keys)keys[k]=false;
+  $('missionOv').hidden=false;document.body.style.overflow='hidden';
+  const body=$('mBody');body.innerHTML='';
+  if(n===0){$('mEyebrow').textContent='Perpustakaan';$('mTitle').textContent='Kamus Routing';renderKamus(body);}
+  else if(n===6){$('mEyebrow').textContent='Masjid';$('mTitle').textContent='Pos Refleksi';renderRefleksi(body);}
+  else{$('mEyebrow').textContent='Misi '+n+' · '+MISSIONS[n].room;$('mTitle').textContent=MISSIONS[n].title;({1:m1,2:m2,3:m3,4:m4,5:m5})[n](body);}
+  $('missionOv').scrollTop=0;$('mClose').focus({preventScroll:true});
+}
+function closeMission(){if(cleanup){cleanup();cleanup=null;}$('missionOv').hidden=true;document.body.style.overflow='';paused=false;cv.focus({preventScroll:true});}
+$('mClose').onclick=closeMission;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('missionOv').hidden)closeMission();if(!$('raporOv').hidden)closeRapor();}});
+function resultBox(body,n,stars,big,line,err){
+  const d=document.createElement('div');d.className='result';
+  d.innerHTML=`<div class="big">${big}</div><div class="stars">${starStr(stars)}</div><p class="lead">${line}</p><div class="row" style="justify-content:center"><button class="btn ghost" type="button" data-x="again">Ulangi misi</button><button class="btn dark" type="button" data-x="back">Kembali ke peta</button></div>`;
+  body.appendChild(d);
+  d.querySelector('[data-x="again"]').onclick=()=>openMission(n);
+  d.querySelector('[data-x="back"]').onclick=closeMission;
+  completeMission(n,stars,err);
+  d.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ---------------- Graph helper (SVG) ---------------- */
+const onPath=(p,a,b)=>!!p&&p.some((n,k)=>k&&((p[k-1]===a&&n===b)||(p[k-1]===b&&n===a)));
+function graphSVG(G,o){
+  o=o||{};const u=o.unit||'';const vb=o.vb||'0 0 760 400';
+  let s=`<svg viewBox="${vb}" role="img" aria-label="${esc(o.aria||'Graf jaringan berbobot')}">`;
+  G.edges.forEach((e,k)=>{
+    const A=G.nodes[e[0]],B=G.nodes[e[1]],mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;
+    const closed=o.closed&&o.closed.includes(k),jam=o.jam&&o.jam[k];
+    const best=onPath(o.best,e[0],e[1]),hl=onPath(o.hl,e[0],e[1]);
+    const col=closed?'#e5484d':best?'#25a866':hl?'#e0a400':'#8a97b5';
+    s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${col}" stroke-width="${best||hl?9:4}" stroke-linecap="round" ${closed?'stroke-dasharray="10 9"':''}/>`;
+    const w=jam?e[2]+jam:e[2];
+    const lab=closed?'✕ banjir':w+(u?' '+u:'');
+    const bw=Math.max(46,lab.length*9+14);
+    s+=`<g ${o.edgeClick?`data-e="${k}" style="cursor:pointer"`:''}><rect x="${mx-bw/2}" y="${my-15}" width="${bw}" height="30" rx="9" fill="${closed?'#fde3e3':jam?'#fff1c9':'#fff'}" stroke="${closed?'#e5484d':jam?'#e0a400':'#1b2440'}" stroke-width="2"/><text x="${mx}" y="${my+6}" text-anchor="middle" font-family="Lexend, sans-serif" font-weight="600" font-size="15" fill="#1b2440">${lab}</text></g>`;
+  });
+  Object.entries(G.nodes).forEach(([id,v])=>{
+    const inP=o.hl&&o.hl.includes(id),fin=o.fin&&o.fin.includes(id),cur=o.cur===id;
+    const fill=cur?'#ffc93c':fin?'#dcf5e6':inP?'#ffc93c':'#fff';
+    s+=`<g data-n="${id}" style="cursor:${o.nodeClick?'pointer':'default'}"><circle cx="${v[0]}" cy="${v[1]}" r="${v[3]?28:24}" fill="${fill}" stroke="#1b2440" stroke-width="3"/>`;
+    s+=`<text x="${v[0]}" y="${v[1]+(v[3]?9:7)}" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="${v[3]?24:20}" fill="#1b2440">${v[3]||id}</text>`;
+    if(v[2])s+=`<text x="${v[0]}" y="${v[1]+(v[1]>(o.labelBelow||200)?50:-38)}" text-anchor="middle" font-family="Lexend, sans-serif" font-weight="600" font-size="14" fill="#55607e">${esc(v[2])}</text>`;
+    if(o.dist&&o.dist[id]!==undefined)s+=`<g><rect x="${v[0]+16}" y="${v[1]-40}" width="44" height="22" rx="6" fill="${fin?'#25a866':'#1b2440'}"/><text x="${v[0]+38}" y="${v[1]-24}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" fill="#fff">${o.dist[id]===Infinity?'∞':o.dist[id]}</text></g>`;
+    s+='</g>';
+  });
+  return s+'</svg>';
+}
+function dijkstra(G,start,end,w){
+  const d={},pr={},q=new Set(Object.keys(G.nodes));Object.keys(G.nodes).forEach(k=>d[k]=Infinity);d[start]=0;
+  while(q.size){let u=null;q.forEach(k=>{if(u===null||d[k]<d[u])u=k;});if(d[u]===Infinity)break;q.delete(u);
+    G.edges.forEach((e,k)=>{const ww=w(e,k);if(ww===Infinity)return;const v=e[0]===u?e[1]:e[1]===u?e[0]:null;if(v&&q.has(v)&&d[u]+ww<d[v]){d[v]=d[u]+ww;pr[v]=u;}});}
+  const p=[end];while(p[0]!==start&&pr[p[0]])p.unshift(pr[p[0]]);return {cost:d[end],path:p};
+}
+
+/* ================= MISI 1 · Fakta atau Mitos ================= */
+const M1_POOL=[
+ {t:'Pesan WhatsApp dikirim utuh dalam satu potongan besar dari HP-mu ke HP temanmu.',a:'Mitos',w:'Data dipecah menjadi paket-paket kecil, lalu disusun ulang di perangkat penerima.'},
+ {t:'Setiap paket data membawa alamat asal, alamat tujuan, dan nomor urut.',a:'Fakta',w:'Alamat dipakai router untuk mengarahkan paket, nomor urut dipakai untuk menyusun ulang pesan.'},
+ {t:'Semua paket dari satu pesan pasti lewat jalur yang sama.',a:'Mitos',w:'Paket bisa menempuh rute berbeda-beda untuk menghindari kemacetan, lalu bertemu lagi di tujuan.'},
+ {t:'Router bertugas memilih dan meneruskan paket ke jalur berikutnya.',a:'Fakta',w:'Router seperti petugas di persimpangan yang menunjukkan arah paket.'},
+ {t:'Rute terbaik selalu yang melewati router paling sedikit.',a:'Mitos',w:'Yang menentukan adalah total bobot (misalnya waktu tunda), bukan jumlah lompatan.'},
+ {t:'Bobot pada link bisa berarti waktu tunda (ms), jarak, atau kepadatan lalu lintas data.',a:'Fakta',w:'Bobot adalah angka "biaya" untuk melewati sebuah link.'},
+ {t:'Jika satu router rusak, seluruh internet di dunia ikut mati.',a:'Mitos',w:'Internet punya banyak rute alternatif. Router lain akan mencari jalan memutar.'},
+ {t:'Paket yang tiba tidak berurutan disusun ulang memakai nomor urutnya.',a:'Fakta',w:'Itulah gunanya nomor urut di setiap paket.'},
+ {t:'Routing adalah proses menentukan jalur paket dari pengirim ke penerima.',a:'Fakta',w:'Router adalah perangkatnya, routing adalah prosesnya.'},
+ {t:'Kemacetan (congestion) di sebuah jalur bisa membuat router memilih jalur lain.',a:'Fakta',w:'Jalur yang macet bobotnya naik, sehingga rute lain bisa menjadi lebih cepat.'},
+ {t:'Shortest path dihitung dengan menjumlahkan bobot semua link di sepanjang rute.',a:'Fakta',w:'Rute dengan jumlah bobot paling kecil adalah shortest path.'},
+ {t:'Satuan "ms" pada bobot jaringan berarti megadetik.',a:'Mitos',w:'ms adalah milidetik, yaitu 1/1000 detik.'},
+ {t:'Dalam graf jaringan, node menggambarkan router atau komputer, sedangkan edge menggambarkan koneksinya.',a:'Fakta',w:'Ini abstraksi yang sama dengan node dan link di Sesi 1.'},
+ {t:'Router dan routing adalah dua kata untuk hal yang sama persis.',a:'Mitos',w:'Router adalah alatnya, routing adalah kegiatan memilih jalurnya.'}
+];
+function runQuiz(root,items,opt){
+  let i=0,correct=0;const res=[];const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:14px';root.appendChild(wrap);
+  const prog=()=>'<div class="progress">'+items.map((_,k)=>`<i class="${k<i?(res[k]?'ok':'bad'):k===i?'cur':''}"></i>`).join('')+'</div>';
+  function show(){
+    if(i>=items.length){opt.onDone(correct,wrap);return;}
+    const it=items[i];
+    wrap.innerHTML=prog()+`<p class="eyebrow">Pernyataan ${i+1} dari ${items.length}</p><div class="qcard" id="qc">${esc(it.t)}</div><div class="bins"><button type="button" class="bin a" data-v="${opt.labels[0]}"><b>${opt.labels[0]}</b><span>${opt.hints[0]}</span></button><button type="button" class="bin b" data-v="${opt.labels[1]}"><b>${opt.labels[1]}</b><span>${opt.hints[1]}</span></button></div><div id="fb"></div>`;
+    wrap.querySelectorAll('.bin').forEach(b=>b.onclick=()=>answer(b.dataset.v));
+  }
+  function answer(v){
+    const it=items[i],ok=v===it.a;res[i]=ok;if(ok)correct++;
+    wrap.querySelector('#qc').classList.add(v===opt.labels[0]?'flyL':'flyR');
+    wrap.querySelectorAll('.bin').forEach(b=>b.disabled=true);
+    const fb=wrap.querySelector('#fb');
+    fb.innerHTML=`<div class="feedback ${ok?'ok':'bad'}"><b>${ok?'Tepat!':'Belum tepat.'}</b><span>Jawaban: <strong>${it.a}</strong>. ${esc(it.w)}</span><div><button type="button" class="btn dark" id="nx">${i+1<items.length?'Pernyataan berikutnya →':'Lihat hasil'}</button></div></div>`;
+    const nx=fb.querySelector('#nx');nx.focus({preventScroll:true});nx.onclick=()=>{i++;show();};
+  }
+  show();
+}
+function m1(body){
+  body.innerHTML=`<p class="lead">Petugas Kantor Pos Data menerima kabar simpang siur tentang cara paket dikirim. Bantu pilah: <b>fakta</b> atau <b>mitos</b>? Kamu dapat 8 pernyataan acak.</p>`;
+  runQuiz(body,shuffle(M1_POOL).slice(0,8),{labels:['Fakta','Mitos'],hints:['benar sesuai cara kerja jaringan','keliru, perlu diluruskan'],onDone:(c,wrap)=>{
+    const stars=c===8?3:c>=7?2:c>=6?1:0;
+    if(!stars){wrap.innerHTML=`<div class="result"><div class="big">${c} / 8 benar</div><div class="stars">${starStr(0)}</div><p class="lead">Minimal 6 benar untuk lulus. Baca lagi penjelasan tiap pernyataan, lalu coba sekali lagi.</p><div class="row" style="justify-content:center"><button class="btn dark" type="button" id="again">Main lagi (pernyataan acak)</button></div></div>`;wrap.querySelector('#again').onclick=()=>m1(body);return;}
+    wrap.innerHTML='';resultBox(wrap,1,stars,c+' / 8 benar','Kamu sudah memahami paket data dan tugas router.',8-c);
+  }});
+}
+
+/* ================= MISI 2 · Pecah & Susun Paket ================= */
+const M2_ROUNDS=[
+ {msg:'BELAJAR ROUTING ITU SERU',parts:['BELA','JAR ','ROUT','ING ','ITU ','SERU'],lost:null},
+ {msg:'PAKET HILANG DIKIRIM ULANG',parts:['PAKE','T HI','LANG',' DIK','IRIM',' ULA','NG'],lost:5}
+];
+const M2_ROUTES=[[[70,150],[230,55],[530,55],[690,150]],[[70,150],[230,150],[530,150],[690,150]],[[70,150],[230,245],[530,245],[690,150]]];
+function m2(body){
+  let round=0,wrong=0,alive=true;cleanup=()=>{alive=false;};
+  const NS='http://www.w3.org/2000/svg';
+  function stageHTML(){
+    let s=`<svg viewBox="0 0 760 300" role="img" aria-label="Paket melewati tiga jalur router">`;
+    M2_ROUTES.forEach(r=>{s+=`<polyline points="${r.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#8a97b5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;});
+    [[230,55],[530,55],[230,150],[530,150],[230,245],[530,245]].forEach((p,k)=>{s+=`<g transform="translate(${p[0]},${p[1]})"><line x1="-10" y1="-5" x2="-14" y2="-20" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/><line x1="10" y1="-5" x2="14" y2="-20" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/><rect x="-20" y="-7" width="40" height="17" rx="5" fill="#ffc93c" stroke="#2a1d00" stroke-width="2"/><text x="0" y="28" text-anchor="middle" font-family="Lexend" font-size="12" fill="#55607e">Router</text></g>`;});
+    s+=`<g transform="translate(70,150)"><rect x="-20" y="-32" width="40" height="64" rx="8" fill="#2b3a63" stroke="#0f1830" stroke-width="2"/><rect x="-15" y="-25" width="30" height="44" rx="2" fill="#7fd3ff"/><text x="0" y="52" text-anchor="middle" font-family="Lexend" font-weight="600" font-size="13" fill="#1b2440">HP-mu</text></g>`;
+    s+=`<g transform="translate(690,150)"><rect x="-26" y="-36" width="52" height="72" rx="6" fill="#33415e" stroke="#0f1830" stroke-width="2"/>${[-22,-6,10].map(y=>`<rect x="-19" y="${y}" width="38" height="10" rx="2" fill="#4c5d85"/><circle cx="13" cy="${y+5}" r="2.5" fill="#7CFFB2"/>`).join('')}<text x="0" y="56" text-anchor="middle" font-family="Lexend" font-weight="600" font-size="13" fill="#1b2440">HP teman</text></g>`;
+    return s+'</svg>';
+  }
+  function flyPacket(svg,pts,label,dur){
+    return new Promise(res=>{
+      const g=document.createElementNS(NS,'g');g.innerHTML=`<rect x="-20" y="-13" width="40" height="26" rx="6" fill="#fff" stroke="#2a1d00" stroke-width="2.5"/><text x="0" y="5" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="15" fill="#1b2440">#${label}</text>`;svg.appendChild(g);
+      const L=polyLen(pts),t0=performance.now();
+      (function step(now){if(!alive){res();return;}const k=Math.min(1,(now-t0)/dur);const q=polyAt(pts,L*k);g.setAttribute('transform',`translate(${q[0]},${q[1]})`);if(k<1)requestAnimationFrame(step);else{g.querySelector('rect').setAttribute('fill','#dcf5e6');setTimeout(()=>{g.remove();res();},250);}})(performance.now());
+    });
+  }
+  function start(){
+    const R=M2_ROUNDS[round];
+    body.innerHTML=`<p class="lead">${round===0?'Kirim pesan ke temanmu. Perhatikan: pesan tidak dikirim utuh, melainkan dipecah menjadi paket bernomor yang bisa lewat jalur berbeda.':'Kali ini jaringan sedang sibuk. Salah satu paket <b>tidak sampai</b>. Temukan nomor paket yang hilang, minta kirim ulang, lalu susun pesannya.'}</p>
+      <div class="note"><b>Pesan yang dikirim:</b> <span style="font-family:var(--f-mono)">${esc(R.msg)}</span> · dipecah menjadi <b>${R.parts.length} paket</b></div>
+      <div class="simbox" id="sim">${stageHTML()}</div>
+      <div class="row"><button class="btn dark" id="send" type="button">📤 Kirim pesan</button><span class="eyebrow">Ronde ${round+1} dari 2</span></div>
+      <div id="stage2"></div>`;
+    body.querySelector('#send').onclick=async e=>{
+      e.target.disabled=true;const svg=body.querySelector('#sim svg');
+      const ids=R.parts.map((_,k)=>k+1).filter(n=>n!==R.lost);
+      const order=shuffle(ids);
+      const arrived=[];
+      await Promise.all(order.map((n,k)=>sleep(k*260).then(()=>flyPacket(svg,M2_ROUTES[(n+k)%3],n,1500+((n*7+k*3)%5)*260)).then(()=>{arrived.push(n);})));
+      if(R.lost){const lp=document.createElementNS(NS,'text');lp.setAttribute('x',380);lp.setAttribute('y',150);lp.setAttribute('text-anchor','middle');lp.setAttribute('font-family','Baloo 2, sans-serif');lp.setAttribute('font-weight','800');lp.setAttribute('font-size','20');lp.setAttribute('fill','#e5484d');lp.textContent='Satu paket hilang di jalan!';svg.appendChild(lp);}
+      if(!alive)return;
+      R.lost?findLost(arrived):assemble(arrived);
+    };
+  }
+  function pkCard(n){const R=M2_ROUNDS[round];return `<button type="button" class="pk" data-n="${n}"><small>#${n} · HP-mu → HP teman</small><b>${esc(R.parts[n-1].replace(/ /g,'·'))}</b></button>`;}
+  function findLost(arrived){
+    const R=M2_ROUNDS[round],st=body.querySelector('#stage2');
+    st.innerHTML=`<p class="eyebrow">Kotak penerima · urutan tiba</p><div class="pkrow">${arrived.map(n=>`<span class="pk"><small>#${n}</small><b>${esc(R.parts[n-1].replace(/ /g,'·'))}</b></span>`).join('')}</div>
+      <p class="lead">Seharusnya ada ${R.parts.length} paket. Nomor berapa yang hilang?</p><div class="numgrid">${R.parts.map((_,k)=>`<button type="button" data-n="${k+1}">${k+1}</button>`).join('')}</div><div id="fb2"></div>`;
+    st.scrollIntoView({behavior:'smooth',block:'nearest'});
+    st.querySelectorAll('.numgrid button').forEach(b=>b.onclick=async()=>{
+      const n=+b.dataset.n,fb=st.querySelector('#fb2');
+      if(n!==R.lost){wrong++;b.disabled=true;fb.innerHTML=`<div class="feedback bad"><b>Bukan itu.</b><span>Paket #${n} sudah ada di kotak penerima. Cek nomor yang belum muncul.</span></div>`;return;}
+      st.querySelectorAll('.numgrid button').forEach(x=>x.disabled=true);
+      fb.innerHTML=`<div class="feedback ok"><b>Tepat, paket #${n} hilang.</b><span>Penerima meminta kirim ulang. Inilah gunanya nomor urut: penerima tahu persis paket mana yang kurang.</span></div>`;
+      const svg=body.querySelector('#sim svg');const tx=svg.querySelector('text[fill="#e5484d"]');if(tx)tx.remove();
+      await flyPacket(svg,M2_ROUTES[1],n,1400);if(!alive)return;
+      assemble(arrived.concat([n]));
+    });
+  }
+  function assemble(arrived){
+    const R=M2_ROUNDS[round],st=body.querySelector('#stage2');let next=1,txt='';
+    st.innerHTML=`<p class="eyebrow">Kotak penerima · urutan tiba (acak)</p><div class="pkrow" id="pool">${arrived.map(pkCard).join('')}</div>
+      <p class="lead">Susun ulang pesannya: ketuk paket mulai dari nomor urut <b>#1</b>.</p><div class="msgbox" id="mb"> </div><div id="fb3"></div>`;
+    st.scrollIntoView({behavior:'smooth',block:'nearest'});
+    st.querySelectorAll('#pool .pk').forEach(b=>b.onclick=()=>{
+      const n=+b.dataset.n;
+      if(n!==next){wrong++;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');toast('Belum. Cari paket bernomor #'+next+'.');return;}
+      b.classList.add('used');txt+=R.parts[n-1];next++;st.querySelector('#mb').textContent=txt;
+      if(next>R.parts.length){
+        const fb=st.querySelector('#fb3');
+        if(round===0){fb.innerHTML=`<div class="feedback ok"><b>Pesan utuh kembali!</b><span>Paket tiba acak karena lewat jalur berbeda, tapi nomor urut membuat pesan bisa disusun lagi.</span><div><button class="btn dark" type="button" id="r2">Ronde 2 →</button></div></div>`;fb.querySelector('#r2').onclick=()=>{round=1;start();};}
+        else{fb.innerHTML='';resultBox(fb,2,starsBy(wrong),'Misi 2 selesai','Kesalahan: '+wrong+'. Kamu paham mengapa setiap paket punya nomor urut dan alamat.',wrong);}
+      }
+    });
+  }
+  start();
+}
+
+/* ================= MISI 3 · Hitung Bobot Rute ================= */
+const M3_LEVELS=[
+ {intro:'Paket dari A menuju D. Ada dua rute. Jumlahkan bobotnya.',G:{nodes:{A:[90,200],B:[380,70],C:[380,330],D:[670,200]},edges:[['A','B',3],['B','D',4],['A','C',2],['C','D',6]]},routes:[['A','B','D'],['A','C','D']],why:'A → B → D = 3 + 4 = 7 ms lebih kecil dari A → C → D = 2 + 6 = 8 ms. Walau link A–C paling kecil, totalnya kalah.'},
+ {intro:'Paket dari S menuju T. Hati-hati: rute yang terlihat panjang belum tentu lambat.',G:{nodes:{S:[80,200],P:[300,70],R:[300,330],Q:[480,250],T:[680,200]},edges:[['S','P',2],['P','T',9],['S','Q',4],['Q','T',3],['S','R',1],['R','Q',1]]},routes:[['S','P','T'],['S','Q','T'],['S','R','Q','T']],why:'S → R → Q → T = 1 + 1 + 3 = 5 ms. Rute ini melewati 3 link, tetapi totalnya paling kecil.'},
+ {intro:'Graf dari kelas tadi: HP kamu (S) ke server ujian (T). Hitung kelima rute.',G:{nodes:{S:[70,200,'HP kamu'],A:[260,70],B:[260,330],C:[500,70],D:[500,330],T:[690,200,'Server']},edges:[['S','A',4],['S','B',2],['B','A',1],['A','C',5],['B','D',8],['C','T',3],['D','T',3],['A','D',7]]},routes:[['S','A','C','T'],['S','B','A','C','T'],['S','B','D','T'],['S','A','D','T'],['S','B','A','D','T']],why:'S → B → A → C → T = 2 + 1 + 5 + 3 = 11 ms (4 lompatan). S → B → D → T hanya 3 lompatan tetapi 13 ms. Lebih banyak router belum tentu lebih lambat!'}
+];
+function m3(body){
+  let lv=0,wrong=0;
+  const cost=(G,r)=>r.slice(1).reduce((s,n,k)=>s+G.edges.find(e=>(e[0]===r[k]&&e[1]===n)||(e[1]===r[k]&&e[0]===n))[2],0);
+  function render(){
+    const L=M3_LEVELS[lv],G=L.G;let hl=null,phase='sum';
+    body.innerHTML=`<div class="row" style="justify-content:space-between"><span class="eyebrow">Level ${lv+1} dari ${M3_LEVELS.length}</span><div class="progress">${M3_LEVELS.map((_,k)=>`<i class="${k<lv?'ok':k===lv?'cur':''}"></i>`).join('')}</div></div>
+      <p class="lead">${L.intro} Satuan bobot: <b>ms</b> (milidetik).</p>
+      <div class="simbox" id="g"></div>
+      <p class="note">Ketuk nama rute untuk menyorotnya di graf. Tulis total bobot setiap rute, lalu tekan <b>Periksa</b>.</p>
+      <table class="rt"><thead><tr><th>Rute</th><th>Total bobot (ms)</th></tr></thead><tbody>${L.routes.map((r,k)=>`<tr data-k="${k}"><td class="r"><button type="button" class="btn ghost" style="padding:4px 10px;font-family:var(--f-mono);color:var(--ink);border-color:#cdbf9b" data-hl="${k}">${r.join(' → ')}</button></td><td><input id="m3-${lv}-${k}" type="number" inputmode="numeric" aria-label="Total bobot rute ${r.join(' ke ')}"></td></tr>`).join('')}</tbody></table>
+      <div class="row"><button class="btn dark" id="chk" type="button">Periksa total</button></div><div id="fb"></div>`;
+    const draw=()=>{body.querySelector('#g').innerHTML=graphSVG(G,{unit:'ms',hl});};draw();
+    body.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{const k=+b.dataset.hl;hl=L.routes[k];body.querySelectorAll('tr[data-k]').forEach(tr=>tr.classList.toggle('hl',+tr.dataset.k===k));draw();});
+    body.querySelector('#chk').onclick=()=>{
+      if(phase!=='sum')return;let bad=0;
+      L.routes.forEach((r,k)=>{const inp=body.querySelector(`#m3-${lv}-${k}`);const ok=+inp.value===cost(G,r)&&inp.value!=='';inp.classList.toggle('ok',ok);inp.classList.toggle('bad',!ok);if(!ok)bad++;});
+      const fb=body.querySelector('#fb');
+      if(bad){wrong+=1;fb.innerHTML=`<div class="feedback bad"><b>${bad} total masih keliru.</b><span>Sorot rutenya, lalu jumlahkan angka di setiap link yang dilewati, dari awal sampai akhir.</span></div>`;return;}
+      phase='pick';body.querySelectorAll('table.rt input').forEach(i=>i.disabled=true);
+      fb.innerHTML=`<div class="feedback ok"><b>Semua total benar!</b><span>Sekarang pilih: rute mana yang menjadi <b>shortest path</b>?</span></div><div class="choice">${L.routes.map((r,k)=>`<button type="button" data-p="${k}">${r.join(' → ')}</button>`).join('')}</div><div id="fb2"></div>`;
+      const best=L.routes.reduce((b,r,k)=>cost(G,r)<cost(G,L.routes[b])?k:b,0);
+      fb.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+        const k=+b.dataset.p;
+        if(k!==best){wrong++;b.classList.add('bad');b.disabled=true;fb.querySelector('#fb2').innerHTML=`<div class="feedback bad"><b>Bukan yang terkecil.</b><span>Bandingkan angka total di tabel. Shortest path = total bobot paling kecil.</span></div>`;return;}
+        b.classList.add('ok');fb.querySelectorAll('[data-p]').forEach(x=>x.disabled=true);
+        hl=null;body.querySelector('#g').innerHTML=graphSVG(G,{unit:'ms',best:L.routes[best]});
+        const f2=fb.querySelector('#fb2');
+        f2.innerHTML=`<div class="feedback ok"><b>Shortest path ditemukan!</b><span>${L.why}</span><div><button class="btn dark" type="button" id="nx">${lv+1<M3_LEVELS.length?'Level berikutnya →':'Selesaikan misi'}</button></div></div>`;
+        f2.scrollIntoView({behavior:'smooth',block:'nearest'});
+        f2.querySelector('#nx').onclick=()=>{if(lv+1<M3_LEVELS.length){lv++;render();body.parentElement.parentElement.scrollTop=0;}else{f2.innerHTML='';resultBox(f2,3,starsBy(wrong),'Misi 3 selesai','Pemeriksaan yang keliru: '+wrong+'. Kamu bisa menghitung total bobot dan menentukan shortest path.',wrong);}};
+      });
+    };
+  }
+  render();
+}
+
+/* ================= MISI 4 · Ambulans ================= */
+const M4G={nodes:{RS:[70,210,'Rumah Sakit','🏥'],Pasar:[230,75,'Pasar'],Sekolah:[240,335,'Sekolah'],Masjid:[420,210,'Masjid'],Taman:[440,60,'Taman'],Stasiun:[600,340,'Stasiun'],Rumah:[700,170,'Rumah Warga','🏠']},
+ edges:[['RS','Pasar',4],['RS','Sekolah',3],['Pasar','Taman',5],['Pasar','Masjid',4],['Sekolah','Masjid',2],['Sekolah','Stasiun',9],['Masjid','Taman',3],['Masjid','Stasiun',4],['Masjid','Rumah',7],['Taman','Rumah',4],['Stasiun','Rumah',2]]};
+const ei=(a,b)=>M4G.edges.findIndex(e=>(e[0]===a&&e[1]===b)||(e[0]===b&&e[1]===a));
+const M4_ROUNDS=[
+ {ev:'<b>Panggilan darurat!</b> Seorang warga butuh pertolongan. Bawa ambulans dari Rumah Sakit ke Rumah Warga secepat mungkin. Angka di jalan = menit tempuh.',closed:[],jam:{}},
+ {ev:'<b>Banjir!</b> Jalan Masjid–Stasiun tergenang dan ditutup. Rute tercepat sebelumnya tidak bisa dipakai. Cari rute baru.',closed:[ei('Masjid','Stasiun')],jam:{}},
+ {ev:'<b>Jam pulang sekolah.</b> Banjir sudah surut, tetapi jalan di sekitar Sekolah macet: RS–Sekolah +6 menit dan Sekolah–Masjid +4 menit.',closed:[],jam:{[ei('RS','Sekolah')]:6,[ei('Sekolah','Masjid')]:4}}
+];
+function m4(body){
+  let round=0,miss=0,alive=true;cleanup=()=>{alive=false;};
+  const NS='http://www.w3.org/2000/svg';
+  function play(){
+    const R=M4_ROUNDS[round];
+    const w=(e,k)=>R.closed.includes(k)?Infinity:e[2]+(R.jam[k]||0);
+    const opt=dijkstra(M4G,'RS','Rumah',w);
+    let path=['RS'],busy=false,tries=0,best=null;
+    body.innerHTML=`<div class="row" style="justify-content:space-between"><span class="eyebrow">Panggilan ${round+1} dari 3</span><div class="progress">${M4_ROUNDS.map((_,k)=>`<i class="${k<round?'ok':k===round?'cur':''}"></i>`).join('')}</div></div>
+      <div class="event">🚑 ${R.ev}</div>
+      <div class="split"><div class="simbox" id="g"></div>
+      <div class="pathbox"><span class="eyebrow">Rute ambulans</span><div class="p" id="pp"></div><div><span class="t" id="tt">0</span> menit</div><p style="margin:0;font-size:13px;color:var(--ink2)">Ketuk tempat berikutnya yang terhubung jalan. Ketuk tempat terakhir untuk mundur.</p>
+      <div class="row"><button class="btn dark" id="go" type="button" disabled>🚑 Berangkat!</button><button class="btn ghost" id="rs" type="button">Ulang rute</button></div></div></div><div id="fb"></div>`;
+    const cost=p=>p.slice(1).reduce((s,n,k)=>{const j=ei(p[k],n);return s+w(M4G.edges[j],j);},0);
+    const draw=()=>{body.querySelector('#g').innerHTML=graphSVG(M4G,{unit:'mnt',hl:path,best,closed:R.closed,jam:R.jam,nodeClick:1,labelBelow:200,aria:'Peta jalan kota untuk ambulans'});
+      body.querySelector('#pp').textContent=path.join(' → ');body.querySelector('#tt').textContent=cost(path);body.querySelector('#go').disabled=path[path.length-1]!=='Rumah'||busy;};
+    draw();
+    body.querySelector('#g').onclick=e=>{if(busy)return;const n=e.target.closest('[data-n]');if(!n)return;const id=n.dataset.n,lastN=path[path.length-1];
+      if(id===lastN&&path.length>1){path.pop();draw();return;}
+      if(lastN==='Rumah'||path.includes(id))return;const j=ei(lastN,id);
+      if(j<0){toast('Tidak ada jalan langsung dari '+M4G.nodes[lastN][2]+' ke '+M4G.nodes[id][2]+'.');return;}
+      if(R.closed.includes(j)){toast('Jalan itu ditutup karena banjir!');return;}
+      path.push(id);draw();};
+    body.querySelector('#rs').onclick=()=>{if(busy)return;path=['RS'];best=null;draw();};
+    body.querySelector('#go').onclick=async()=>{
+      busy=true;draw();const svg=body.querySelector('#g svg');const pts=path.map(id=>M4G.nodes[id].slice(0,2));
+      const g=document.createElementNS(NS,'g');g.innerHTML='<text x="0" y="10" text-anchor="middle" font-size="30">🚑</text>';svg.appendChild(g);
+      const L=polyLen(pts),t0=performance.now(),dur=Math.min(3200,900+cost(path)*120);
+      await new Promise(res=>{(function st(now){if(!alive){res();return;}const k=Math.min(1,(now-t0)/dur),q=polyAt(pts,L*k);g.setAttribute('transform',`translate(${q[0]},${q[1]})`);k<1?requestAnimationFrame(st):res();})(performance.now());});
+      if(!alive)return;busy=false;tries++;
+      const c=cost(path),fb=body.querySelector('#fb');
+      if(c===opt.cost){
+        best=path.slice();draw();body.querySelector('#go').disabled=true;
+        fb.innerHTML=`<div class="feedback ok"><b>Tiba dalam ${c} menit, ini rute tercepat!</b><span>${round===0?'Perhatikan: rute ini lewat 4 jalan, bukan yang paling sedikit belokannya.':round===1?'Saat satu jalan tertutup, router (dan sopir ambulans) mencari jalan memutar dengan total waktu terkecil.':'Macet menaikkan bobot jalan, sehingga rute yang tadinya cepat menjadi lambat. Router di internet juga begitu.'}</span><div><button class="btn dark" type="button" id="nx">${round<2?'Panggilan berikutnya →':'Selesaikan misi'}</button></div></div>`;
+        fb.scrollIntoView({behavior:'smooth',block:'nearest'});
+        fb.querySelector('#nx').onclick=()=>{if(round<2){round++;play();}else finish(fb);};
+      }else{
+        miss++;
+        fb.innerHTML=`<div class="feedback bad"><b>Tiba dalam ${c} menit.</b><span>Masih ada rute yang lebih cepat ${c-opt.cost} menit. Setiap menit sangat berarti bagi pasien. Coba lagi!</span>${tries>=2?'<div><button class="btn ghost" type="button" id="hint" style="color:var(--ink);border-color:#cdbf9b">Tunjukkan rute tercepat</button></div>':''}</div>`;
+        const h=fb.querySelector('#hint');if(h)h.onclick=()=>{miss++;best=opt.path;path=opt.path.slice();draw();toast('Rute tercepat ditandai hijau. Tekan Berangkat!');};
+      }
+    };
+  }
+  function finish(fb){
+    fb.innerHTML=`<div class="note" style="border-color:var(--ok)"><b>Peduli sesama:</b> ambulans yang tiba beberapa menit lebih cepat bisa menyelamatkan nyawa. Saat mendengar sirene, menepilah dan beri jalan. Memilih rute yang efisien juga menghemat bahan bakar dan mengurangi polusi di kotamu.</div>`;
+    resultBox(fb,4,starsBy(miss),'Misi 4 selesai','Percobaan yang belum tercepat: '+miss+'. Kamu bisa memilih rute tercepat meski kondisi jalan berubah.',miss);
+  }
+  play();
+}
+
+/* ================= MISI 5 · Router Pintar (Dijkstra) ================= */
+const M5G=M3_LEVELS[2].G;
+function m5(body){
+  let wrong=0;const ids=Object.keys(M5G.nodes);
+  const d={},from={},fin=[];ids.forEach(k=>{d[k]=Infinity;from[k]='-';});d.S=0;
+  let upd=[],cur=null,log=['Mulai: jarak S = 0, node lain belum diketahui (∞).'];
+  function nextPick(){let u=null;ids.forEach(k=>{if(!fin.includes(k)&&(u===null||d[k]<d[u]))u=k;});return u;}
+  function render(){
+    const done=fin.includes('T');
+    body.innerHTML=`<p class="lead">Kamu adalah router di Pusat Kendali. Router sungguhan memakai <b>algoritma Dijkstra</b> untuk mencari rute terpendek. Aturannya cuma satu: <b>selalu pilih node yang belum final dengan jarak sementara terkecil</b>. Setelah dipilih, router memperbarui jarak tetangganya.</p>
+      <div class="split"><div class="simbox" id="g">${graphSVG(M5G,{unit:"ms",fin,cur,dist:d,nodeClick:1,labelBelow:-1,best:done?route():null})}</div>
+      <div class="pathbox"><span class="eyebrow">Tabel router</span><table class="dj"><tr><th>Node</th><th>Jarak</th><th>Dari</th></tr>${ids.map(k=>`<tr data-n="${k}" class="${fin.includes(k)?'fin':upd.includes(k)?'upd':''}"><td>${k}${fin.includes(k)?' ✓':''}</td><td>${d[k]===Infinity?'∞':d[k]}</td><td>${from[k]}</td></tr>`).join('')}</table></div></div>
+      <div class="log">${log.slice(-3).map((l,k,a)=>`<div class="${k===a.length-1?'warn':''}">${l}</div>`).join('')}</div><div id="fb"></div>`;
+    if(!done){body.querySelector('#g').onclick=e=>{const n=e.target.closest('[data-n]');if(n)pick(n.dataset.n);};body.querySelectorAll('table.dj tr[data-n]').forEach(tr=>tr.onclick=()=>pick(tr.dataset.n));}
+    else finalQ();
+  }
+  function route(){const p=['T'];while(p[0]!=='S')p.unshift(from[p[0]]);return p;}
+  function pick(k){
+    if(fin.includes(k)){toast(k+' sudah final.');return;}
+    const u=nextPick();
+    if(k!==u){wrong++;log.push(`❌ ${k} belum bisa dipilih: jaraknya ${d[k]===Infinity?'∞':d[k]}, padahal ada node belum final dengan jarak lebih kecil.`);render();return;}
+    fin.push(k);cur=k;upd=[];const notes=[];
+    M5G.edges.forEach(e=>{const v=e[0]===k?e[1]:e[1]===k?e[0]:null;if(!v||fin.includes(v))return;const nd=d[k]+e[2];
+      if(nd<d[v]){notes.push(`${v}: ${d[v]===Infinity?'∞':d[v]} → <b>${nd}</b> lewat ${k}`);d[v]=nd;from[v]=k;upd.push(v);} else notes.push(`${v}: tetap ${d[v]} (lewat ${k} = ${nd}, tidak lebih kecil)`);});
+    log.push(`✅ ${k} final (jarak ${d[k]}). `+(notes.length?'Perbarui tetangga: '+notes.join(' · '):'Tidak ada tetangga yang perlu diperbarui.'));
+    render();
+  }
+  function finalQ(){
+    const fb=body.querySelector('#fb');const ans=route().join(' → ');
+    const opts=shuffle([ans,'S → B → D → T','S → A → C → T']);
+    fb.innerHTML=`<div class="feedback ok"><b>T sudah final: jarak terpendek = ${d.T} ms.</b><span>Baca kolom "Dari" mundur dari T untuk menemukan rutenya. Rute mana yang dipilih router?</span></div><div class="choice">${opts.map(o=>`<button type="button" data-o="${o}">${o}</button>`).join('')}</div><div id="fb2"></div>`;
+    fb.scrollIntoView({behavior:'smooth',block:'nearest'});
+    fb.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+      if(b.dataset.o!==ans){wrong++;b.classList.add('bad');b.disabled=true;return;}
+      b.classList.add('ok');fb.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
+      const f2=fb.querySelector('#fb2');
+      f2.innerHTML=`<div class="note"><b>Di dunia nyata:</b> router internet menjalankan protokol seperti OSPF yang memakai algoritma Dijkstra ini ribuan kali, otomatis dan sangat cepat. Aplikasi peta di HP juga memakai prinsip yang mirip untuk mencari rute tercepat.</div>`;
+      resultBox(f2,5,starsBy(wrong),'Misi 5 selesai','Pilihan yang keliru: '+wrong+'. Kamu sudah menjalankan algoritma Dijkstra seperti router sungguhan!',wrong);
+    });
+  }
+  render();
+}
+
+/* ================= Kamus ================= */
+const KAMUS=[
+ ['Paket data','Potongan kecil data digital yang dikirim lewat jaringan. Berisi alamat asal, alamat tujuan, dan nomor urut.','Pesan WhatsApp dipecah jadi banyak paket.'],
+ ['Router','Perangkat yang memilih dan meneruskan paket ke jalur terbaik.','Seperti petugas di persimpangan.'],
+ ['Routing','Proses menentukan jalur yang dilalui paket dari pengirim ke penerima.','Router = alatnya, routing = prosesnya.'],
+ ['Graf (V, E)','Model jaringan berupa node (vertex) dan link (edge).','Abstraksi dari Sesi 1.'],
+ ['Bobot (weight)','Angka pada link yang menunjukkan biaya: waktu tunda (ms), jarak, atau beban.','Makin kecil, makin cepat.'],
+ ['ms (milidetik)','Satu per seribu detik.','1 detik = 1.000 ms.'],
+ ['Lompatan (hop)','Satu kali perpindahan paket dari satu node ke node berikutnya.','Lompatan sedikit belum tentu cepat.'],
+ ['Shortest path','Rute dengan total bobot terkecil antara dua node.','Bukan rute dengan link paling sedikit.'],
+ ['Kemacetan (congestion)','Lalu lintas data padat sehingga waktu tunda naik.','Router bisa memilih jalur lain.'],
+ ['Algoritma Dijkstra','Langkah mencari shortest path: selalu pilih node belum final dengan jarak terkecil, lalu perbarui tetangganya.','Ditemukan Edsger Dijkstra (1956).'],
+ ['OSPF','Protokol routing yang dipakai router internet untuk menghitung rute terpendek dengan Dijkstra.','Open Shortest Path First.'],
+ ['Nomor urut','Nomor pada paket untuk menyusun ulang pesan dan mendeteksi paket yang hilang.','Paket hilang bisa diminta kirim ulang.']
+];
+function renderKamus(body){
+  body.innerHTML=`<p class="lead">Istilah penting Sesi 2. Baca dulu sebelum mengerjakan misi atau LKPD.</p><div class="kamus">${KAMUS.map(k=>`<div class="term"><b>${k[0]}</b><p>${k[1]}</p><small>${k[2]}</small></div>`).join('')}</div>
+  <p class="eyebrow">Satu materi, empat kaitan</p>
+  <div class="kait"><div class="term"><b>Nilai Islam</b><p>QS Al-Fatihah: 6, "Tunjukilah kami jalan yang lurus." Setiap shalat kita memohon jalan terbaik kepada Allah.</p></div>
+  <div class="term"><b>Matematika</b><p>Teori graf lahir dari soal Tujuh Jembatan Königsberg yang dipecahkan Leonhard Euler tahun 1736.</p></div>
+  <div class="term"><b>IPTEK</b><p>Router internet memakai OSPF dan algoritma Dijkstra. Aplikasi peta memakai prinsip serupa.</p></div>
+  <div class="term"><b>Kehidupan</b><p>Ojek online dan ambulans memilih rute berdasarkan waktu tempuh, bukan jarak di peta.</p></div></div>`;
+}
+
+/* ================= Refleksi ================= */
+const AMG=[{ar:'الْهَادِي',n:'Al-Hadi',m:'Maha Pemberi Petunjuk'},{ar:'الْحَكِيمُ',n:'Al-Hakim',m:'Maha Bijaksana'},{ar:'الرَّزَّاقُ',n:'Ar-Razzaq',m:'Maha Pemberi Rezeki'}];
+function renderRefleksi(body){
+  const R=S.refl||{am:'',alasan:'',kesan:'',sulit:'',aksi:''};
+  body.innerHTML=`<div class="ayat"><span class="eyebrow">QS Al-Fatihah: 6</span><div class="ar" lang="ar">اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ</div><p style="margin:0">"Tunjukilah kami jalan yang lurus."</p><p style="margin:0;font-size:14px;color:var(--ink2)">Router mencari jalan terbaik untuk paket data. Kita memohon jalan terbaik kepada Allah, minimal 17 kali sehari dalam shalat.</p></div>
+    <p class="lead"><b>1.</b> Nama Allah mana yang paling terasa dari materi hari ini? Pilih, lalu tulis alasanmu.</p>
+    <div class="amg">${AMG.map(a=>`<button type="button" data-a="${a.n}" aria-pressed="${R.am===a.n}"><span class="ar" lang="ar">${a.ar}</span><b>${a.n}</b><span>${a.m}</span></button>`).join('')}</div>
+    <div class="field"><label for="rAlasan">Alasanku memilih nama itu</label><textarea id="rAlasan">${esc(R.alasan)}</textarea></div>
+    <div id="amfb"></div>
+    <div class="field"><label for="rKesan"><b>2.</b> Misi mana yang paling seru, dan kenapa?</label><textarea id="rKesan">${esc(R.kesan)}</textarea></div>
+    <div class="field"><label for="rSulit"><b>3.</b> Bagian mana yang masih sulit atau membingungkan?</label><textarea id="rSulit">${esc(R.sulit)}</textarea></div>
+    <div class="field"><label for="rAksi"><b>4.</b> Satu hal yang akan kulakukan: memilih "rute terbaik" dalam keputusan minggu ini, atau membantu orang lain di jalan.</label><textarea id="rAksi">${esc(R.aksi)}</textarea></div>
+    <div class="row"><button class="btn dark" id="rSave" type="button">Simpan refleksi</button><button class="btn ghost" id="rCopy" type="button" style="color:var(--ink);border-color:#cdbf9b">Salin laporan untuk guru</button></div>
+    <div id="rOut"></div>`;
+  let am=R.am;
+  const amFb=()=>{body.querySelector('#amfb').innerHTML=am?`<div class="feedback ok"><span>Pilihan guru: <b>Al-Hadi</b>. Router menunjukkan jalan bagi paket data, tetapi petunjuk sejati datang dari Allah Al-Hadi. Al-Hakim juga tepat bila alasanmu tentang bijak memilih. Sikap yang tumbuh: <b>teliti menghitung, bijak memilih jalan yang benar, peduli memberi jalan bagi orang lain.</b></span></div>`:'';};amFb();
+  body.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{am=b.dataset.a;body.querySelectorAll('[data-a]').forEach(x=>x.setAttribute('aria-pressed',x===b));amFb();});
+  const collect=()=>({am,alasan:body.querySelector('#rAlasan').value.trim(),kesan:body.querySelector('#rKesan').value.trim(),sulit:body.querySelector('#rSulit').value.trim(),aksi:body.querySelector('#rAksi').value.trim()});
+  body.querySelector('#rSave').onclick=()=>{const r=collect();if(!r.am||!r.kesan||!r.sulit){toast('Pilih Asmaul Husna dan isi kesan serta kesulitanmu dulu.');return;}const first=!S.refl;S.refl=r;enqueue(Object.assign({jenis:'refleksi'},r));save();refreshHUD();if(first)flash=1.2;toast('Refleksi tersimpan. Terima kasih!');};
+  body.querySelector('#rCopy').onclick=()=>copyReport(body.querySelector('#rOut'),collect());
+}
+function reportText(r){
+  r=r||S.refl||{};
+  return ['LAPORAN MISI JARINGAN · SESI 2 (Routing & Rute Tercepat)','Nama: '+(S.name||'-')+' · Kelas: '+(S.kelas||'-'),
+    ...MN.map(n=>`Misi ${n} ${MISSIONS[n].title}: ${S.m[n].d?S.m[n].s+'/3 bintang':'belum'}`),
+    'Total: '+totalStars()+'/15 bintang','',
+    'Asmaul Husna: '+(r.am||'-')+(r.alasan?' — '+r.alasan:''),'Kesan: '+(r.kesan||'-'),'Kesulitan: '+(r.sulit||'-'),'Aksi: '+(r.aksi||'-')].join('\n');
+}
+function copyReport(out,r){
+  const txt=reportText(r);
+  const fallback=()=>{out.innerHTML=`<div class="note">Salin teks ini secara manual (tekan lama / Ctrl+C):<textarea id="rpt" readonly style="min-height:200px;margin-top:6px">${esc(txt)}</textarea></div>`;const t=out.querySelector('#rpt');t.focus();t.select();};
+  try{navigator.clipboard.writeText(txt).then(()=>toast('Laporan tersalin. Tempel di Google Classroom atau LKPD.'),fallback);}catch(e){fallback();}
+}
+
+/* ================= Rapor ================= */
+function openRapor(){
+  paused=true;$('raporOv').hidden=false;
+  $('raporName').textContent=(S.name||'Tamu')+(S.kelas?' · '+S.kelas:'');
+  $('raporBody').innerHTML=`<table class="rapor"><tr><th>Misi</th><th>Status</th><th>Bintang</th></tr>${MN.map(n=>`<tr><td>${n}. ${esc(MISSIONS[n].title)}</td><td>${S.m[n].d?'Selesai':unlocked(n)?'Belum':'Terkunci'}</td><td class="s">${starStr(S.m[n].s)}</td></tr>`).join('')}
+    <tr><td>Pos Refleksi</td><td>${S.refl?'Sudah':'Belum'}</td><td>${S.refl?'+50 XP':''}</td></tr>
+    <tr><th>Total</th><th>${totalStars()*100+(S.refl?50:0)} XP</th><th>${totalStars()} / 15 ⭐</th></tr></table>
+    <p class="lead" style="font-size:14px">${ONLINE?(S.q.length?'⏳ '+S.q.length+' catatan belum terkirim ke guru. Akan dikirim otomatis saat ada internet.':S.kodeBad?'⚠ Kode kelas salah. Tekan Ganti nama dan tulis ulang kode dari guru.':'☁ Semua progres sudah terkirim ke guru.')+' ':''}Nilai Sesi 2 tetap dari LKPD 5.2.</p>
+    <div class="row"><button class="btn dark" type="button" id="rcopy">Salin laporan</button><button class="btn ghost" type="button" id="rename">Ganti nama</button><button class="btn ghost" type="button" id="wipe">Hapus progres</button></div><div id="confirm"></div>`;
+  $('rcopy').onclick=()=>copyReport($('confirm'));
+  $('rename').onclick=()=>{closeRapor();showStart();};
+  $('wipe').onclick=()=>{$('confirm').innerHTML=`<div class="feedback bad"><span>Yakin menghapus semua bintang Sesi 2 di perangkat ini?</span><div class="row"><button class="btn dark" type="button" id="yes">Ya, hapus</button><button class="btn ghost" type="button" id="no">Batal</button></div></div>`;
+    $('yes').onclick=()=>{const n=S.name,k=S.kelas,kd=S.kode,dv=S.dev,q=S.q;S=fresh();S.name=n;S.kelas=k;S.kode=kd;S.dev=dv;S.q=q;save();refreshHUD();closeRapor();toast('Progres Sesi 2 dihapus.');};
+    $('no').onclick=()=>{$('confirm').innerHTML='';};};
+  $('raporClose').focus({preventScroll:true});
+}
+function closeRapor(){$('raporOv').hidden=true;if($('missionOv').hidden&&$('startOv').hidden)paused=false;}
+$('btnRapor').onclick=openRapor;$('raporClose').onclick=closeRapor;
+
+/* ================= Sinkron ke Google Sheet ================= */
+function enqueue(item){
+  if(!ONLINE)return;
+  item.id=S.dev+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+  item.waktu=new Date().toISOString();
+  S.q.push(item);if(S.q.length>60)S.q=S.q.slice(-60);
+  save();setTimeout(syncNow,50);
+}
+let syncing=false,lastErr='';
+async function syncNow(){
+  if(!ONLINE||syncing||!S.q.length||S.kodeBad||!S.kode)return syncChip();
+  syncing=true;syncChip();
+  try{
+    while(S.q.length){
+      const it=S.q[0];
+      const payload=Object.assign({},it,{sesi:SESI,kode:S.kode,nama:S.name,perangkat:S.dev});
+      const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      const j=await r.json();
+      if(j&&j.ok){S.q.shift();save();lastErr='';}
+      else if(j&&j.error==='kode'){S.kodeBad=true;save();toast('Kode kelas tidak dikenali server. Buka Rapor Misi → Ganti nama, lalu tulis kode dari guru.',5000);break;}
+      else{S.q.shift();save();lastErr=(j&&j.error)||'ditolak';}
+    }
+  }catch(e){lastErr='offline';}
+  syncing=false;syncChip();
+}
+function syncChip(){
+  const c=$('hudSync');if(!c)return;
+  if(!ONLINE){c.hidden=true;return;}
+  c.hidden=false;
+  const n=S.q?S.q.length:0;
+  c.textContent=S.kodeBad?'⚠ Kode kelas salah':syncing?'☁ Mengirim…':n?('⏳ '+n+' menunggu sinyal'):'☁ Tersimpan ke guru';
+  c.title=n?'Progres disimpan di perangkat dan akan dikirim otomatis saat internet tersedia.':'Semua progres sudah terkirim ke Google Sheet guru.';
+}
+window.addEventListener('online',syncNow);
+setInterval(()=>{if(S.q&&S.q.length)syncNow();},30000);
+
+/* ================= Start ================= */
+function showStart(){paused=true;$('startOv').hidden=false;$('inName').value=S.name||'';$('inKelas').value=(ONLINE?S.kode:S.kelas)||'';setTimeout(()=>$('inName').focus(),50);}
+$('btnStart').onclick=()=>{
+  const n=$('inName').value.trim();if(!n){$('inName').focus();toast('Tulis nama panggilanmu dulu.');return;}
+  const kv=$('inKelas').value.trim().toUpperCase();
+  if(ONLINE&&!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)){$('inKelas').focus();toast('Tulis kode kelas dari guru, contoh: 8B-GN26.');return;}
+  S.name=n;if(ONLINE){S.kode=kv;S.kelas=kv.split('-')[0];S.kodeBad=false;}else S.kelas=kv;save();syncNow();$('startOv').hidden=true;paused=false;refreshHUD();
+  toast('Halo '+n+'! Mulai dari Kantor Pos Data yang berkedip.');cv.focus({preventScroll:true});
+};
+$('inKelas').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnStart').click();});
+$('inName').addEventListener('keydown',e=>{if(e.key==='Enter')$('inKelas').focus();});
+refreshHUD();
+if(ONLINE){$('lblKelas').textContent='Kode kelas dari guru';$('inKelas').placeholder='contoh: 8B-GN26';$('inKelas').maxLength=17;}
+if(!S.name||(ONLINE&&!S.kode))showStart();else syncNow();
+})();
+
+</script>
