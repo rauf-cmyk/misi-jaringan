@@ -117,7 +117,7 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-si
   <div class="stats">
     <div class="stat"><small>Siswa aktif</small><b id="sAktif">0/0</b></div>
     <div class="stat"><small>Bintang kelas</small><b id="sBintang">0/0</b></div>
-    <div class="stat"><small>Tamat 5 misi</small><b id="sTamat">0</b></div>
+    <div class="stat"><small id="lTamat">Tamat semua misi</small><b id="sTamat">0</b></div>
     <div class="stat"><small>Refleksi</small><b id="sRefl">0</b></div>
   </div>
   <div class="live" id="live"><i></i><span id="upd">Menghubungkan…</span></div>
@@ -150,8 +150,12 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-si
 "use strict";
 /* ===== PENGATURAN GURU: URL Web App Apps Script yang sama dengan media siswa ===== */
 const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
-const SESI='Sesi 2 Routing';
-const MISI=['Fakta atau Mitos Paket?','Pecah & Susun Paket','Hitung Bobot Rute','Misi Ambulans','Router Pintar'];
+const SESI_CFG={
+  '1':{sesi:'Sesi 1 Jaringan',label:'Misi Jaringan · Sesi 1 Jaringan Lokal',misi:['LAN atau Internet?','Switch atau Router?','Dari Abstraksi ke Jaringan','Lab Bebas: Rancang Jaringan']},
+  '2':{sesi:'Sesi 2 Routing',label:'Misi Jaringan · Sesi 2 Routing',misi:['Fakta atau Mitos Paket?','Pecah & Susun Paket','Hitung Bobot Rute','Misi Ambulans','Router Pintar']}
+};
+const CFG=SESI_CFG[new URLSearchParams(location.search).get('sesi')]||SESI_CFG['2'];
+const SESI=CFG.sesi, MISI=CFG.misi, MAXB=MISI.length*3;
 const POLL=15000;
 /* ================================================================================== */
 const $=id=>document.getElementById(id);
@@ -171,14 +175,14 @@ function render(d){
   const rankOf={};ranked.forEach((s,k)=>rankOf[s.nama]=k+1);
   $('kelas').textContent=d.kelas;
   $('sAktif').textContent=ranked.length+'/'+S.length;
-  $('sBintang').textContent=S.reduce((a,s)=>a+s.total,0)+'/'+S.length*15;
+  $('sBintang').textContent=S.reduce((a,s)=>a+s.total,0)+'/'+S.length*MAXB;
   $('sTamat').textContent=S.filter(s=>MISI.every((_,k)=>s.m[k+1])).length;
   $('sRefl').textContent=S.filter(s=>s.refl).length;
   const up=n=>prevRank[n]&&rankOf[n]<prevRank[n]?'<span class="up">▲'+(prevRank[n]-rankOf[n])+'</span>':'';
   // podium order 2,1,3
   $('podium').innerHTML=[1,0,2].map(k=>{const s=ranked[k],cls='pod p'+(k+1);
     if(!s)return `<div class="${cls} empty"><div class="who">Menunggu juara…</div><div class="block">${k+1}</div></div>`;
-    return `<div class="${cls}" data-n="${esc(s.nama)}">${k===0?'<div class="crown">👑</div>':''}<div class="who">${esc(s.nama)}${up(s.nama)}</div><div class="pts">${s.total}<small>/15 ★</small></div>${pips(s.m)}<div class="block">${k+1}</div></div>`;}).join('');
+    return `<div class="${cls}" data-n="${esc(s.nama)}">${k===0?'<div class="crown">👑</div>':''}<div class="who">${esc(s.nama)}${up(s.nama)}</div><div class="pts">${s.total}<small>/${MAXB} ★</small></div>${pips(s.m)}<div class="block">${k+1}</div></div>`;}).join('');
   $('rank').innerHTML=ranked.slice(3,10).map((s,k)=>`<li data-n="${esc(s.nama)}"><span class="n">${k+4}</span><span class="nm">${esc(s.nama)}${up(s.nama)}</span>${pips(s.m)}<span class="tt">${s.total} ★</span></li>`).join('')||'<li><span></span><span class="nm" style="color:var(--muted)">Belum ada peringkat 4–10.</span></li>';
   $('bars').innerHTML=MISI.map((t,k)=>{const n=S.filter(s=>s.m[k+1]).length,p=S.length?n/S.length*100:0;return `<div class="bar"><span>${k+1}. ${esc(t)}</span><div class="tr"><i style="width:${p}%"></i></div><b>${n}/${S.length}</b></div>`;}).join('');
   $('feed').innerHTML=d.feed.map(f=>`<li><time>${hhmm(f.t)}</time><span>${f.jenis==='refleksi'?`<b>${esc(f.nama)}</b> menulis refleksi${f.am?' · '+esc(f.am):''}`:`<b>${esc(f.nama)}</b> menyelesaikan ${esc(MISI[(+f.misi)-1]||f.judul)} <span class="st">${stars(+f.bintang)}</span>`}</span></li>`).join('')||'<li><time></time><span style="color:var(--muted)">Belum ada aktivitas. Ayo mulai misi!</span></li>';
@@ -219,14 +223,16 @@ function demoData(){
   if(!demoState){
     const names=['Contoh Adi','Contoh Bunga','Contoh Cahya','Contoh Dimas','Contoh Elsa','Contoh Farhan','Contoh Gita','Contoh Hana','Contoh Ilham','Contoh Jihan','Contoh Kevin','Contoh Laila','Contoh Malik','Contoh Nadia','Contoh Oki','Contoh Putri','Contoh Raka','Contoh Sinta'];
     const t0=Date.now()-40*60000;
-    demoState={feed:[],siswa:names.map((n,k)=>{const m={};const done=Math.max(0,5-Math.floor(k/3));for(let i=1;i<=done;i++)m[i]=1+((k+i)%3);return {nama:n,no:k+1,m,refl:done===5&&k%2===0,t:t0+k*60000};})};
+    demoState={feed:[],siswa:names.map((n,k)=>{const m={};const done=Math.max(0,MISI.length-Math.floor(k/3));for(let i=1;i<=done;i++)m[i]=1+((k+i)%3);return {nama:n,no:k+1,m,refl:done===5&&k%2===0,t:t0+k*60000};})};
   }
   const D=demoState;const s=D.siswa[Math.floor(Math.random()*D.siswa.length)];
-  const nextM=[1,2,3,4,5].find(i=>!s.m[i]||s.m[i]<3);
+  const nextM=MISI.map((_,k)=>k+1).find(i=>!s.m[i]||s.m[i]<3);
   if(nextM){const b=Math.min(3,(s.m[nextM]||0)+1+Math.floor(Math.random()*2));s.m[nextM]=b;s.t=Date.now();D.feed.unshift({t:Date.now(),nama:s.nama,jenis:'misi',misi:nextM,judul:MISI[nextM-1],bintang:b});}
   D.siswa.forEach(x=>x.total=Object.values(x.m).reduce((a,b)=>a+b,0));
   return {ok:true,kelas:'8B',sesi:SESI,siswa:JSON.parse(JSON.stringify(D.siswa)),feed:D.feed.slice(0,8)};
 }
+$('sub').textContent=CFG.label;document.title='Papan Bintang · '+CFG.sesi;
+try{if(!new URLSearchParams(location.search).get('sesi')){const u=new URL(location.href);u.searchParams.set('sesi',SESI===SESI_CFG['1'].sesi?'1':'2');history.replaceState(null,'',u);}}catch(x){}
 if(DEMO){$('demo').hidden=false;load();}
 else if(!kode)askKode();else load();
 })();

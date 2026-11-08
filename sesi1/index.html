@@ -1,0 +1,2967 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset=utf8>
+    <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <style>
+    :root {
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom:env(safe-area-inset-bottom, 0px)
+    }
+
+    html {
+        scroll-padding-top:env(safe-area-inset-top, 0px)
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #fff;
+        color:#000
+    }
+
+    img {
+        max-width:100%
+    }
+
+    [hidden]:not([hidden=until-found i]) {
+        display: none !important
+    }
+    </style>
+</head>
+<body>
+    <title>Misi Jaringan Sesi 1</title>
+    <meta name="claude:viewport-fit-sides" content="cover">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+    <style>
+    /* Layout: HUD bar on top, the school map as the game stage, mission cards below; missions open as a full sheet over the map. Single "night HUD + daylight map" look. */
+    :root {
+        --night: #15203a;
+        --panel: #1f2d4f;
+        --panel2: #283a63;
+        --line: #3a4e7d;
+        --paper: #fbf6e9;
+        --paper2: #f1e8d2;
+        --ink: #1b2440;
+        --ink2: #55607e;
+        --cream: #f3ecd8;
+        --muted: #9fabc8;
+        --signal: #ffc93c;
+        --cable: #3b8beb;
+        --ok: #25a866;
+        --bad: #e5484d;
+        --f-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+        --f-body: "Lexend", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+        color-scheme: dark;
+    }
+
+    * {
+        box-sizing: border-box
+    }
+
+    [hidden] {
+        display: none !important
+    }
+
+    html, body {
+        background: var(--night);
+        color: var(--cream)
+    }
+
+    body {
+        font-family: var(--f-body);
+        font-size: 15px;
+        line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 12px 28px
+    }
+
+    button {
+        font: inherit;
+        cursor: pointer
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+        outline: 3px solid var(--signal);
+        outline-offset: 2px
+    }
+
+    .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px
+    }/* HUD */
+    .hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 14px
+    }
+
+    .brand {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+        margin-right: auto;
+        min-width: 0
+    }
+
+    .brand b {
+        font-family: var(--f-display);
+        font-weight: 800;
+        font-size: 22px;
+        color: var(--signal);
+        letter-spacing: .2px
+    }
+
+    .brand span {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .08em
+    }
+
+    .chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--panel2);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 14px;
+        white-space: nowrap
+    }
+
+    .chip strong {
+        font-family: var(--f-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--signal)
+    }
+
+    .btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 14px;
+        font-weight: 600;
+        background: var(--signal);
+        color: #2a1d00
+    }
+
+    .btn.ghost {
+        background: transparent;
+        color: var(--cream);
+        border: 1px solid var(--line)
+    }
+
+    .btn.dark {
+        background: var(--ink);
+        color: var(--paper)
+    }
+
+    .btn.ok {
+        background: var(--ok);
+        color: #fff
+    }
+
+    .btn:disabled {
+        opacity: .45;
+        cursor: not-allowed
+    }/* Stage */
+    .stage {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 3px solid #0d1529;
+        background: #86c766;
+        box-shadow: 0 10px 0 #0d1529
+    }
+
+    #map {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 960/600;
+        touch-action: none;
+        cursor: pointer
+    }
+
+    .enter {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        font-family: var(--f-display);
+        font-size: 18px;
+        font-weight: 800;
+        padding: 8px 22px;
+        border-radius: 999px;
+        border: 3px solid #2a1d00;
+        background: var(--signal);
+        color: #2a1d00;
+        box-shadow: 0 4px 0 #2a1d00;
+        white-space: nowrap;
+        max-width: calc(100% - 24px);
+        overflow: hidden;
+        text-overflow: ellipsis
+    }
+
+    .enter.locked {
+        background: #d6d9e2;
+        border-color: #4b536b;
+        color: #3b4258;
+        box-shadow: 0 4px 0 #4b536b
+    }
+
+    .stage-hint {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        font-size: 13px;
+        color: var(--muted)
+    }
+
+    .stage-hint kbd {
+        font-family: var(--f-mono);
+        background: var(--panel2);
+        border-radius: 5px;
+        padding: 1px 6px;
+        color: var(--cream)
+    }/* Mission list */
+    .missions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 12px
+    }
+
+    .mcard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0
+    }
+
+    .mcard .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px
+    }
+
+    .mcard .tag {
+        font-size: 11px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--muted)
+    }
+
+    .mcard h3 {
+        margin: 0;
+        font-family: var(--f-display);
+        font-size: 19px;
+        line-height: 1.15;
+        color: var(--cream)
+    }
+
+    .mcard p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted)
+    }
+
+    .mcard .go {
+        align-self: flex-start;
+        margin-top: 4px
+    }
+
+    .mcard.locked {
+        opacity: .55
+    }
+
+    .mcard.done {
+        border-color: var(--ok)
+    }
+
+    .stars {
+        font-size: 18px;
+        letter-spacing: 2px;
+        color: var(--signal);
+        white-space: nowrap
+    }
+
+    .stars .off {
+        color: #4a5a85
+    }
+
+    .banner {
+        background: var(--ok);
+        color: #fff;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-weight: 500
+    }
+
+    .banner[hidden] {
+        display: none
+    }
+
+    footer {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 6px;
+        border-top: 1px solid var(--line);
+        padding-top: 10px
+    }/* Overlays */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(8, 13, 28, .78);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+        padding: calc(14px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px))
+    }
+
+    .sheet {
+        background: var(--paper);
+        color: var(--ink);
+        width: 100%;
+        max-width: 920px;
+        border-radius: 18px;
+        border: 3px solid #0d1529;
+        box-shadow: 0 10px 0 #0d1529;
+        overflow: hidden
+    }
+
+    .sheet-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        background: var(--paper2);
+        border-bottom: 2px dashed #d8cba8;
+        padding: 12px 16px
+    }
+
+    .sheet-head h2 {
+        margin: 0;
+        font-family: var(--f-display);
+        font-size: 26px;
+        line-height: 1.1
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--ink2)
+    }
+
+    .sheet-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px
+    }
+
+    .sheet .btn.ghost {
+        color: var(--ink);
+        border-color: #cdbf9b
+    }
+
+    .lead {
+        margin: 0;
+        max-width: 68ch;
+        color: var(--ink)
+    }
+
+    .note {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--ink)
+    }
+
+    .note b {
+        color: var(--ink)
+    }/* Quiz */
+    .progress {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap
+    }
+
+    .progress i {
+        width: 26px;
+        height: 8px;
+        border-radius: 4px;
+        background: #e2d6b8
+    }
+
+    .progress i.ok {
+        background:var(--ok)
+    }
+
+    .progress i.bad {
+        background:var(--bad)
+    }
+
+    .progress i.cur {
+        background: var(--ink)
+    }
+
+    .qcard {
+        background: #fff;
+        border: 3px solid var(--ink);
+        border-radius: 16px;
+        padding: 22px 20px;
+        font-size: 19px;
+        font-weight: 500;
+        line-height: 1.4;
+        box-shadow: 0 6px 0 var(--ink);
+        text-wrap: balance;
+        transition: transform .35s ease, opacity .35s ease
+    }
+
+    .qcard.flyL {
+        transform: translate(-40px, 30px) rotate(-6deg);
+        opacity: 0
+    }
+
+    .qcard.flyR {
+        transform: translate(40px, 30px) rotate(6deg);
+        opacity: 0
+    }
+
+    .bins {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px
+    }
+
+    .bin {
+        border: 3px solid var(--ink);
+        border-radius: 14px;
+        padding: 14px 10px;
+        background: var(--paper2);
+        color: var(--ink);
+        text-align: center;
+        box-shadow: 0 5px 0 var(--ink)
+    }
+
+    .bin b {
+        display: block;
+        font-family: var(--f-display);
+        font-size: 24px;
+        line-height: 1
+    }
+
+    .bin span {
+        font-size: 12.5px;
+        color: var(--ink2)
+    }
+
+    .bin:active {
+        transform: translateY(3px);
+        box-shadow: 0 2px 0 var(--ink)
+    }
+
+    .bin.a {
+        background:#dff0ff
+    }
+
+    .bin.b {
+        background: #fff1c9
+    }
+
+    .feedback {
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px
+    }
+
+    .feedback.ok {
+        background: #dcf5e6;
+        border: 2px solid var(--ok)
+    }
+
+    .feedback.bad {
+        background: #fde3e3;
+        border: 2px solid var(--bad)
+    }
+
+    .feedback b {
+        font-family: var(--f-display);
+        font-size: 20px
+    }
+
+    .result {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 0
+    }
+
+    .result .big {
+        font-family: var(--f-display);
+        font-size: 44px;
+        line-height: 1;
+        color: var(--ink)
+    }
+
+    .result .stars {
+        font-size: 34px;
+        color: #e0a400
+    }
+
+    .result .stars .off {
+        color: #d9ccaa
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center
+    }/* SVG sims */
+    .simbox {
+        background: #eef4fb;
+        border: 2px solid #c9d7ea;
+        border-radius: 14px;
+        overflow: hidden
+    }
+
+    .simbox svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none
+    }
+
+    .seg {
+        display: inline-flex;
+        border: 2px solid var(--ink);
+        border-radius: 10px;
+        overflow: hidden
+    }
+
+    .seg button {
+        border: 0;
+        background: #fff;
+        color: var(--ink);
+        padding: 7px 14px;
+        font-weight: 600
+    }
+
+    .seg button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--paper)
+    }
+
+    .ctrl {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px
+    }
+
+    .ctrl .box {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0
+    }
+
+    .ctrl .box label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink2)
+    }
+
+    .log {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 14px
+    }
+
+    .log div {
+        padding: 8px 12px;
+        border-radius: 10px
+    }
+
+    .log .ok {
+        background:#dcf5e6
+    }
+
+    .log .bad {
+        background:#fde3e3
+    }
+
+    .log .warn {
+        background: #fff1c9
+    }
+
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        font-size: 13px;
+        color: var(--ink2)
+    }
+
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px
+    }
+
+    .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center
+    }
+
+    .toolbar .btn {
+        padding: 7px 12px;
+        font-size: 14px
+    }
+
+    select {
+        font: inherit;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        color: var(--ink)
+    }/* Kamus */
+    .kamus {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px
+    }
+
+    .term {
+        background: #fff;
+        border: 2px solid #e3d6b4;
+        border-radius: 12px;
+        padding: 10px 12px
+    }
+
+    .term b {
+        font-family: var(--f-display);
+        font-size: 19px;
+        display: block;
+        line-height: 1.1;
+        margin-bottom: 4px
+    }
+
+    .term p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--ink)
+    }
+
+    .term small {
+        display: block;
+        margin-top: 6px;
+        color: var(--ink2);
+        font-size: 12.5px
+    }/* Start + rapor */
+    .start {
+        max-width: 560px
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px
+    }
+
+    .field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink2)
+    }
+
+    .field input {
+        font: inherit;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        color: var(--ink)
+    }
+
+    table.rapor {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px
+    }
+
+    table.rapor td, table.rapor th {
+        padding: 8px 6px;
+        border-bottom: 1px solid #e3d6b4;
+        text-align: left
+    }
+
+    table.rapor td.s {
+        color: #e0a400;
+        font-size: 18px;
+        white-space: nowrap
+    }
+
+    .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 80;
+        background: var(--ink);
+        color: var(--paper);
+        border: 2px solid var(--signal);
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-weight: 500;
+        max-width: min(520px, calc(100% - 32px));
+        text-align: center
+    }
+
+    @media (max-width: 560px) {
+        .brand b {
+            font-size: 19px
+        }
+
+        .qcard {
+            font-size: 17px;
+            padding: 16px
+        }
+
+        .sheet-head h2 {
+            font-size: 22px
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            transition: none !important;
+            animation: none !important
+        }
+    }
+    </style>
+
+    <div class="wrap">
+        <header class="hud">
+            <div class="brand">
+                <b>Misi Jaringan</b>
+                <span>Sesi 1 · Konfigurasi Jaringan Komputer</span>
+            </div>
+            <div class="chip">
+                👤 
+                <span id="hudName">Tamu</span>
+            </div>
+            <div class="chip">
+                ⭐ 
+                <strong id="hudStars">0</strong>
+                /12
+            </div>
+            <div class="chip">
+                XP 
+                <strong id="hudXP">0</strong>
+            </div>
+            <div class="chip" id="hudSync" hidden></div>
+            <button class="btn ghost" id="btnRapor" type="button">Rapor Misi</button>
+        </header>
+
+        <section class="stage" aria-label="Peta sekolah">
+            <canvas id="map" width="960" height="600" tabindex="0" aria-label="Peta sekolah. Gerakkan karakter dengan tombol panah atau ketuk tempat tujuan.">
+            </canvas>
+            <button class="enter" id="enterBtn" type="button" hidden>Masuk</button>
+        </section>
+        <div class="stage-hint">
+            <span>
+                Gerak: 
+                <kbd>←</kbd>
+                <kbd>↑</kbd>
+                <kbd>→</kbd>
+                <kbd>↓</kbd>
+                 atau 
+                <kbd>W</kbd>
+                <kbd>A</kbd>
+                <kbd>S</kbd>
+                <kbd>D</kbd>
+            </span>
+            <span>Atau ketuk/klik gedung untuk berjalan ke pintunya</span>
+            <span>
+                Masuk ruangan: 
+                <kbd>Enter</kbd>
+            </span>
+        </div>
+
+        <div class="banner" id="doneBanner" hidden>
+            🎉 Semua misi Sesi 1 selesai! Sekarang kerjakan 
+            <b>LKPD Sesi 1</b>
+             dengan pemahamanmu sendiri.
+        </div>
+        <section class="missions" id="missionList" aria-label="Daftar misi"></section>
+
+        <footer>
+            <span>Informatika Kelas VIII · SMIT Gema Nurani · Media latihan mandiri, nilai tetap dari LKPD</span>
+            <span>Created By Ai Prompted By Guru Belajar Digital (Rauf)</span>
+        </footer>
+    </div>
+
+    <style>.field select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:2px solid var(--ink);background:#fff;color:var(--ink);width:100%}</style>
+    <!-- Start -->
+    <div class="overlay" id="startOv" hidden>
+        <div class="sheet start">
+            <div class="sheet-head">
+                <div>
+                    <p class="eyebrow">Selamat datang, agen jaringan</p>
+                    <h2>Jaringan sekolah belum tersambung!</h2>
+                </div>
+            </div>
+            <div class="sheet-body">
+                <p class="lead">Tim IT SMIT Gema Nurani butuh bantuanmu. Jelajahi peta sekolah, masuk ke setiap ruangan, dan selesaikan misinya. Setiap misi yang selesai akan menyalakan kabel jaringan di peta.</p>
+                <div class="field" id="nameField">
+                    <label for="inName">Nama panggilan</label>
+                    <input id="inName" maxlength="20" autocomplete="off" placeholder="contoh: Aisyah">
+                </div>
+                <div class="field" id="kelasField">
+                    <label for="inKelas" id="lblKelas">Kelas</label>
+                    <input id="inKelas" maxlength="10" autocomplete="off" placeholder="contoh: 8B">
+                </div>
+                <div class="row" id="cekRow" hidden><button class="btn ghost" id="btnCek" type="button" style="color:var(--ink);border-color:#cdbf9b">Cek kelas</button><span id="cekMsg" style="font-size:14px"></span></div>
+                <div class="field" id="pickWrap" hidden><label for="inSiswa">Pilih namamu</label><select id="inSiswa"></select></div>
+                <div class="row">
+                    <button class="btn dark" id="btnStart" type="button">Mulai Misi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission sheet -->
+    <div class="overlay" id="missionOv" hidden>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+            <div class="sheet-head">
+                <div>
+                    <p class="eyebrow" id="mEyebrow"></p>
+                    <h2 id="mTitle"></h2>
+                </div>
+                <button class="btn ghost" id="mClose" type="button">← Kembali ke peta</button>
+            </div>
+            <div class="sheet-body" id="mBody"></div>
+        </div>
+    </div>
+
+    <!-- Rapor -->
+    <div class="overlay" id="raporOv" hidden>
+        <div class="sheet start">
+            <div class="sheet-head">
+                <div>
+                    <p class="eyebrow">Rapor Misi · Sesi 1</p>
+                    <h2 id="raporName"></h2>
+                </div>
+                <button class="btn ghost" id="raporClose" type="button">Tutup</button>
+            </div>
+            <div class="sheet-body" id="raporBody"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script>
+    (function() {
+        "use strict";
+        /* ===== PENGATURAN GURU =====
+           Tempel URL Web App Google Apps Script di antara tanda kutip (sama dengan Sesi 2).
+           Kosongkan ('') bila tidak ingin mengirim progres ke Google Sheet. */
+        const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+        const SESI = 'Sesi 1 Jaringan';
+        /* ============================ */
+        const ONLINE = !!ENDPOINT;
+        const KEY = 'misiJaringan8.sesi1.v1';
+        const fresh = () => ({
+            name: '',
+            kelas: '',
+            m: {
+                1: {
+                    s: 0,
+                    d: false
+                },
+                2: {
+                    s: 0,
+                    d: false
+                },
+                3: {
+                    s: 0,
+                    d: false
+                },
+                4: {
+                    s: 0,
+                    d: false
+                }
+            }
+        });
+        let S = null;
+        try {
+            S = JSON.parse(localStorage.getItem(KEY));
+        } catch (e) {}
+        if (!S || !S.m)
+            S = fresh();
+        if (!S.dev) S.dev = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        if (!Array.isArray(S.q)) S.q = [];
+        function save() {
+            try {
+                localStorage.setItem(KEY, JSON.stringify(S));
+            } catch (e) {}
+        }
+        const $ = id => document.getElementById(id);
+        const shuffle = a => {
+            a = a.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+        const esc = s => String(s).replace(/[&<>"]/g, c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;'
+        }[c]));
+        const starStr = (n) => '★'.repeat(n) + '<span class="off">' + '★'.repeat(3 - n) + '</span>';
+
+        let toastT = 0;
+        function toast(msg, ms) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.hidden = false;
+            clearTimeout(toastT);
+            toastT = setTimeout(() => t.hidden = true, ms || 2600);
+        }
+
+        /* ---------------- Missions meta ---------------- */
+        const MISSIONS = {
+            1: {
+                title: 'LAN atau Internet?',
+                room: 'Ruang Kelas 8',
+                desc: 'Pilah kejadian sehari-hari: jaringan lokal atau internet?'
+            },
+            2: {
+                title: 'Switch atau Router?',
+                room: 'Ruang TU',
+                desc: 'Pasang perangkat yang tepat agar lab bisa berbagi file dan membuka internet.'
+            },
+            3: {
+                title: 'Dari Abstraksi ke Jaringan',
+                room: 'Lab Komputer',
+                desc: 'Baca gambar node & link, lalu tentukan peran tiap node.'
+            },
+            4: {
+                title: 'Lab Bebas: Rancang Jaringan',
+                room: 'Ruang Server',
+                desc: 'Rancang jaringan ruang guru sendiri, lalu kirim paket untuk mengujinya.'
+            }
+        };
+        const unlocked = n => n === 1 || (S.m[n - 1] && S.m[n - 1].d);
+        const allDone = () => [1, 2, 3, 4].every(n => S.m[n].d);
+        function totalStars() {
+            return [1, 2, 3, 4].reduce((a, n) => a + S.m[n].s, 0);
+        }
+
+        function refreshHUD() {
+            $('hudName').textContent = S.name ? (S.name + (S.kelas ? ' · ' + S.kelas : '')) : 'Tamu';
+            $('hudStars').textContent = totalStars();
+            $('hudXP').textContent = totalStars() * 100;
+            $('doneBanner').hidden = !allDone();
+            syncChip();
+            const L = $('missionList');
+            L.innerHTML = '';
+            [1, 2, 3, 4].forEach(n => {
+                const m = MISSIONS[n],
+                    st = S.m[n],
+                    ul = unlocked(n);
+                const c = document.createElement('article');
+                c.className = 'mcard' + (ul ? '' : ' locked') + (st.d ? ' done' : '');
+                c.innerHTML = `<div class="top"><span class="tag">Misi ${n} · ${esc(m.room)}</span><span class="stars">${starStr(st.s)}</span></div>
+                      <h3>${esc(m.title)}</h3><p>${ul ? esc(m.desc) : '🔒 Selesaikan Misi ' + (n - 1) + ' dulu.'}</p>`;
+                if (ul) {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'btn go';
+                    b.textContent = st.d ? 'Ulangi misi' : 'Jalan ke sini';
+                    b.onclick = () => walkToRoom(ROOMS.find(r => r.mission === n));
+                    c.appendChild(b);
+                }
+                L.appendChild(c);
+            });
+            const k = document.createElement('article');
+            k.className = 'mcard';
+            k.innerHTML = `<div class="top"><span class="tag">Perpustakaan</span><span class="stars">📖</span></div><h3>Kamus Jaringan</h3><p>Lupa arti node, link, switch, atau router? Mampir ke perpustakaan.</p>`;
+            const kb = document.createElement('button');
+            kb.type = 'button';
+            kb.className = 'btn ghost go';
+            kb.textContent = 'Jalan ke sini';
+            kb.onclick = () => walkToRoom(ROOMS[0]);
+            k.appendChild(kb);
+            L.appendChild(k);
+        }
+
+        function completeMission(n, stars) {
+            const st = S.m[n];
+            const first = !st.d;
+            st.d = true;
+            st.s = Math.max(st.s, stars);
+            enqueue({jenis: 'misi', misi: n, judul: MISSIONS[n].title, bintang: stars});
+            save();
+            refreshHUD();
+            if (first)
+                flash = 1.6;
+            toast(first ? `Misi ${n} selesai! Kabel jaringan di peta menyala ⚡` : `Misi ${n} diulang. Bintang terbaik disimpan.`);
+        }
+
+        /* ---------------- MAP ---------------- */
+        const cv = $('map'),
+            ctx = cv.getContext('2d');
+        const W = 960,
+            H = 600;
+        let dpr = 1;
+        function fitCanvas() {
+            dpr = Math.min(2, window.devicePixelRatio || 1);
+            cv.width = W * dpr;
+            cv.height = H * dpr;
+        }
+        fitCanvas();
+        window.addEventListener('resize', fitCanvas);
+
+        const ROOMS = [
+        {
+            id: 'lib',
+            name: 'Perpustakaan',
+            x: 50,
+            y: 50,
+            w: 190,
+            h: 120,
+            roof: '#b5603d',
+            wall: '#f2d9b8',
+            door: 'bottom',
+            mission: 0
+        },
+        {
+            id: 'kelas',
+            name: 'Ruang Kelas 8',
+            x: 290,
+            y: 40,
+            w: 210,
+            h: 130,
+            roof: '#3d6fb6',
+            wall: '#f4efe2',
+            door: 'bottom',
+            mission: 1
+        },
+        {
+            id: 'tu',
+            name: 'Ruang TU',
+            x: 550,
+            y: 50,
+            w: 180,
+            h: 120,
+            roof: '#7a4fa0',
+            wall: '#efe6f6',
+            door: 'bottom',
+            mission: 2
+        },
+        {
+            id: 'lab',
+            name: 'Lab Komputer',
+            x: 70,
+            y: 390,
+            w: 230,
+            h: 140,
+            roof: '#2f8a63',
+            wall: '#e6f3ea',
+            door: 'top',
+            mission: 3
+        },
+        {
+            id: 'server',
+            name: 'Ruang Server',
+            x: 410,
+            y: 400,
+            w: 190,
+            h: 120,
+            roof: '#33415e',
+            wall: '#dfe4ef',
+            door: 'top',
+            mission: 4
+        }
+        ];
+        ROOMS.forEach(r => {
+            const cx = r.x + r.w / 2;
+            r.zone = r.door === 'bottom' ? {
+                x: cx - 30,
+                y: r.y + r.h + 2,
+                w: 60,
+                h: 36
+            } : {
+                x: cx - 30,
+                y: r.y - 38,
+                w: 60,
+                h: 36
+            };
+            r.doorPt = {
+                x: cx,
+                y: r.door === 'bottom' ? r.y + r.h + 20 : r.y - 20
+            };
+        });
+        const TREES = [{
+            x: 660,
+            y: 430
+        }, {
+            x: 720,
+            y: 520
+        }, {
+            x: 350,
+            y: 560
+        }, {
+            x: 28,
+            y: 250
+        }, {
+            x: 740,
+            y: 300
+        }, {
+            x: 640,
+            y: 560
+        }, {
+            x: 270,
+            y: 250
+        }];
+        const OBST = ROOMS.map(r => ({
+            x: r.x,
+            y: r.y,
+            w: r.w,
+            h: r.h
+        })).concat(TREES.map(t => ({
+            x: t.x - 9,
+            y: t.y - 6,
+            w: 18,
+            h: 16
+        }))).concat([{
+            x: 474,
+            y: 282,
+            w: 12,
+            h: 12
+        }]);
+        const BOUND = {
+            x1: 16,
+            y1: 22,
+            x2: 772,
+            y2: 586
+        };
+        const P = {
+            x: 480,
+            y: 320,
+            r: 12,
+            dir: 1,
+            walk: 0,
+            tx: null,
+            ty: null,
+            moving: false
+        };
+        const keys = {};
+        let paused = false,
+            flash = 0,
+            nearRoom = null;
+
+        // grass texture
+        const dots = [];
+        (function() {
+            let s = 7;
+            const rnd = () => {
+                s = (s * 9301 + 49297) % 233280;
+                return s / 233280;
+            };
+            for (let i = 0; i < 420; i++)
+                dots.push({
+                    x: rnd() * 780,
+                    y: rnd() * 600,
+                    c: rnd() > .5 ? '#7bbd5b' : '#97d476'
+                });
+        })();
+
+        const CABLES = [
+        {
+            to: 'kelas',
+            pts: [[505, 410], [505, 360], [450, 360], [450, 150]],
+            on: () => S.m[1].d
+        },
+        {
+            to: 'tu',
+            pts: [[540, 410], [540, 360], [690, 360], [690, 150]],
+            on: () => S.m[2].d
+        },
+        {
+            to: 'isp',
+            pts: [[600, 460], [800, 460], [870, 380]],
+            on: () => S.m[2].d
+        },
+        {
+            to: 'lab',
+            pts: [[410, 470], [300, 470]],
+            on: () => S.m[3].d
+        },
+        {
+            to: 'lib',
+            pts: [[470, 410], [470, 355], [210, 355], [210, 150]],
+            on: () => S.m[4].d
+        }
+        ];
+        function polyLen(p) {
+            let L = 0;
+            for (let i = 1; i < p.length; i++)
+                L += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+            return L;
+        }
+        function polyAt(p, d) {
+            for (let i = 1; i < p.length; i++) {
+                const l = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+                if (d <= l) {
+                    const t = d / l;
+                    return [p[i - 1][0] + (p[i][0] - p[i - 1][0]) * t, p[i - 1][1] + (p[i][1] - p[i - 1][1]) * t];
+                }
+                d -= l;
+            }
+            return p[p.length - 1];
+        }
+        CABLES.forEach(c => c.len = polyLen(c.pts));
+
+        function rr(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function drawGround() {
+            ctx.fillStyle = '#8fcf6b';
+            ctx.fillRect(0, 0, W, H);
+            dots.forEach(d => {
+                ctx.fillStyle = d.c;
+                ctx.fillRect(d.x, d.y, 3, 3);
+            });
+            // courtyard + paths
+            ctx.fillStyle = '#e9d7a9';
+            rr(30, 205, 750, 145, 18);
+            ctx.fill();
+            ROOMS.forEach(r => {
+                const z = r.zone;
+                ctx.fillRect(z.x + 6, r.door === 'bottom' ? r.y + r.h : z.y, z.w - 12, r.door === 'bottom' ? (205 - (r.y + r.h) + 4) : (r.y - 345 + 4));
+            });
+            ctx.strokeStyle = '#d5c08b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 8]);
+            rr(40, 215, 730, 125, 14);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // field label
+            ctx.fillStyle = 'rgba(120,95,40,.35)';
+            ctx.font = '800 22px "Baloo 2", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('LAPANGAN', 610, 300);
+            // outside fence area
+            ctx.fillStyle = '#6f8fa8';
+            ctx.fillRect(790, 0, 170, 600);
+            ctx.fillStyle = '#5d7c93';
+            for (let y = 0; y < 600; y += 40)
+                ctx.fillRect(868, y + 8, 6, 22);
+            ctx.fillStyle = '#7d5b3c';
+            ctx.fillRect(782, 0, 8, 600);
+            for (let y = 6; y < 600; y += 22) {
+                ctx.fillStyle = '#a07a52';
+                ctx.fillRect(779, y, 14, 6);
+            }
+            // flag
+            ctx.fillStyle = '#777';
+            ctx.fillRect(478, 240, 4, 54);
+            ctx.fillStyle = '#e5484d';
+            ctx.fillRect(482, 242, 22, 8);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(482, 250, 22, 8);
+            ctx.fillStyle = '#a99566';
+            ctx.fillRect(472, 292, 16, 6);
+        }
+        function drawISP(t) {
+            // cloud
+            const cx = 875,
+                cy = 110;
+            const on = S.m[2].d;
+            ctx.fillStyle = on ? '#ffffff' : '#d8e1ea';
+            [[-30, 8, 24], [0, -8, 30], [30, 8, 22], [0, 14, 24]].forEach(c => {
+                ctx.beginPath();
+                ctx.arc(cx + c[0], cy + c[1], c[2], 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.fillStyle = '#1b2440';
+            ctx.font = '800 17px "Baloo 2", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('INTERNET', cx, cy + 8);
+            // tower
+            const tx = 870,
+                ty = 380;
+            ctx.strokeStyle = '#e8eef5';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(tx - 26, ty);
+            ctx.lineTo(tx, ty - 150);
+            ctx.lineTo(tx + 26, ty);
+            ctx.stroke();
+            for (let i = 1; i < 6; i++) {
+                const y = ty - i * 25,
+                    hw = 26 * (1 - i * 25 / 150);
+                ctx.beginPath();
+                ctx.moveTo(tx - hw, y);
+                ctx.lineTo(tx + hw, y);
+                ctx.stroke();
+            }
+            ctx.fillStyle = on ? '#ffc93c' : '#9aa6b4';
+            ctx.beginPath();
+            ctx.arc(tx, ty - 152, 6, 0, Math.PI * 2);
+            ctx.fill();
+            if (on) {
+                ctx.strokeStyle = 'rgba(255,201,60,' + (0.6 - 0.6 * ((t * 0.8) % 1)) + ')';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(tx, ty - 152, 10 + 30 * ((t * 0.8) % 1), Math.PI * 1.1, Math.PI * 1.9);
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#fff';
+            ctx.font = '600 13px Lexend, sans-serif';
+            ctx.fillText('Menara ISP', tx, ty + 20);
+            // dashed line tower-cloud
+            ctx.strokeStyle = on ? '#ffc93c' : 'rgba(255,255,255,.5)';
+            ctx.setLineDash([5, 6]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(tx, ty - 160);
+            ctx.lineTo(cx, cy + 38);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        function drawTree(t) {
+            ctx.fillStyle = 'rgba(0,0,0,.15)';
+            ctx.beginPath();
+            ctx.ellipse(t.x, t.y + 8, 20, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#7a5532';
+            ctx.fillRect(t.x - 4, t.y - 6, 8, 14);
+            ctx.fillStyle = '#3f9a4e';
+            ctx.beginPath();
+            ctx.arc(t.x, t.y - 18, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#57b665';
+            ctx.beginPath();
+            ctx.arc(t.x - 6, t.y - 24, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        function drawRoom(r, t) {
+            const locked = r.mission > 0 && !unlocked(r.mission);
+            const done = r.mission > 0 && S.m[r.mission].d;
+            ctx.fillStyle = 'rgba(0,0,0,.18)';
+            rr(r.x + 6, r.y + 8, r.w, r.h, 8);
+            ctx.fill();
+            ctx.fillStyle = r.wall;
+            rr(r.x, r.y, r.w, r.h, 8);
+            ctx.fill();
+            ctx.fillStyle = r.roof;
+            rr(r.x, r.y, r.w, 34, 8);
+            ctx.fill();
+            ctx.fillRect(r.x, r.y + 20, r.w, 14);
+            // windows
+            const wy = r.door === 'bottom' ? r.y + 48 : r.y + r.h - 44;
+            for (let x = r.x + 16; x < r.x + r.w - 30; x += 36) {
+                if (Math.abs(x + 12 - (r.x + r.w / 2)) < 30)
+                    continue;
+                ctx.fillStyle = (r.id === 'lab' || r.id === 'server') && done ? '#9ee6ff' : '#bfe0f5';
+                ctx.fillRect(x, wy, 24, 20);
+                ctx.strokeStyle = '#5b6b86';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, wy, 24, 20);
+            }
+            // door
+            const cx = r.x + r.w / 2;
+            const dy = r.door === 'bottom' ? r.y + r.h - 34 : r.y + 34;
+            ctx.fillStyle = locked ? '#6b6f7c' : '#8a5a33';
+            ctx.fillRect(cx - 14, dy, 28, 34);
+            ctx.fillStyle = '#ffc93c';
+            ctx.fillRect(cx + 6, dy + 16, 4, 4);
+            // sign on roof
+            ctx.fillStyle = '#fff';
+            ctx.font = '800 17px "Baloo 2", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(r.name, cx, r.y + 24);
+            // badge
+            if (r.mission > 0) {
+                const bx = r.x + r.w - 14,
+                    by = r.y + r.h - 14;
+                ctx.fillStyle = done ? '#25a866' : locked ? '#6b6f7c' : '#ffc93c';
+                ctx.beginPath();
+                ctx.arc(bx, by, 13, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = done || locked ? '#fff' : '#2a1d00';
+                ctx.font = '800 15px "Baloo 2", sans-serif';
+                ctx.fillText(done ? '✓' : locked ? '🔒' : String(r.mission), bx, by + 5);
+                if (!done && !locked) {
+                    const a = 0.5 + 0.5 * Math.sin(t * 4);
+                    ctx.strokeStyle = 'rgba(255,201,60,' + a + ')';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 17 + 3 * a, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            } else {
+                ctx.font = '18px sans-serif';
+                ctx.fillText('📖', r.x + r.w - 16, r.y + r.h - 10);
+            }
+        }
+        function drawCables(t) {
+            CABLES.forEach(c => {
+                const on = c.on();
+                ctx.lineCap = 'round';
+                if (on) {
+                    ctx.strokeStyle = 'rgba(59,139,235,.35)';
+                    ctx.lineWidth = 9;
+                    ctx.beginPath();
+                    c.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = on ? '#3b8beb' : 'rgba(70,70,70,.35)';
+                ctx.lineWidth = on ? 4 : 3;
+                ctx.setLineDash(on ? [] : [6, 7]);
+                ctx.beginPath();
+                c.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+                ctx.stroke();
+                ctx.setLineDash([]);
+                if (on) {
+                    for (let k = 0; k < 3; k++) {
+                        const d = ((t * 90 + k * c.len / 3) % c.len);
+                        const q = polyAt(c.pts, d);
+                        ctx.fillStyle = '#ffc93c';
+                        ctx.beginPath();
+                        ctx.arc(q[0], q[1], 4.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#2a1d00';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                }
+            });
+        }
+        function drawPlayer() {
+            const x = P.x,
+                y = P.y,
+                ph = P.moving ? Math.sin(P.walk * 12) : 0;
+            ctx.fillStyle = 'rgba(0,0,0,.22)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + 14, 13, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#1d2b4f';
+            ctx.fillRect(x - 7, y + 2, 5, 12 + ph * 2);
+            ctx.fillRect(x + 2, y + 2, 5, 12 - ph * 2);
+            ctx.fillStyle = '#ffffff';
+            rr(x - 10, y - 12, 20, 18, 5);
+            ctx.fill();
+            ctx.strokeStyle = '#1b2440';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = '#1d2b4f';
+            ctx.fillRect(x - 1, y - 12, 2, 10);
+            ctx.fillStyle = '#f1c27d';
+            ctx.beginPath();
+            ctx.arc(x, y - 22, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#2b1d14';
+            ctx.beginPath();
+            ctx.arc(x, y - 25, 10, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#1b2440';
+            ctx.fillRect(x + P.dir * 3 - 1.5, y - 22, 3, 3);
+            ctx.fillRect(x + P.dir * 3 + 4 * P.dir - 1.5, y - 22, 3, 3);
+            if (S.name) {
+                ctx.font = '600 12px Lexend, sans-serif';
+                ctx.textAlign = 'center';
+                const w = ctx.measureText(S.name).width + 12;
+                ctx.fillStyle = 'rgba(27,36,64,.85)';
+                rr(x - w / 2, y - 52, w, 18, 9);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.fillText(S.name, x, y - 39);
+            }
+        }
+        function drawPrompt(t) {
+            if (!nearRoom)
+                return;
+            const r = nearRoom;
+            const locked = r.mission > 0 && !unlocked(r.mission);
+            const txt = locked ? '🔒 Selesaikan Misi ' + (r.mission - 1) + ' dulu' : 'Tekan Enter untuk masuk';
+            ctx.font = '600 13px Lexend, sans-serif';
+            const w = ctx.measureText(txt).width + 18;
+            const x = r.doorPt.x,
+                y = (r.door === 'bottom' ? r.y + r.h + 58 : r.y - 46) + Math.sin(t * 5) * 2;
+            ctx.fillStyle = locked ? '#e3e6ee' : '#ffc93c';
+            rr(x - w / 2, y - 14, w, 26, 13);
+            ctx.fill();
+            ctx.strokeStyle = '#1b2440';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#1b2440';
+            ctx.textAlign = 'center';
+            ctx.fillText(txt, x, y + 4);
+        }
+        function hit(x, y) {
+            if (x - P.r < BOUND.x1 || x + P.r > BOUND.x2 || y - P.r < BOUND.y1 || y + P.r > BOUND.y2)
+                return true;
+            for (const o of OBST) {
+                if (x + P.r > o.x && x - P.r < o.x + o.w && y + 8 > o.y && y - 6 < o.y + o.h)
+                    return true;
+            }
+            return false;
+        }
+        function inRect(x, y, z) {
+            return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
+        }
+
+        let last = performance.now(),
+            T = 0;
+        function frame(now) {
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            T += dt;
+            if (!paused) {
+                let vx = 0,
+                    vy = 0;
+                if (keys.ArrowLeft || keys.a)
+                    vx -= 1;
+                if (keys.ArrowRight || keys.d)
+                    vx += 1;
+                if (keys.ArrowUp || keys.w)
+                    vy -= 1;
+                if (keys.ArrowDown || keys.s)
+                    vy += 1;
+                if (vx || vy) {
+                    P.tx = null;
+                }
+                else if (P.tx !== null) {
+                    const dx = P.tx - P.x,
+                        dy = P.ty - P.y,
+                        d = Math.hypot(dx, dy);
+                    if (d < 4) {
+                        P.tx = null;
+                    } else {
+                        vx = dx / d;
+                        vy = dy / d;
+                    }
+                }
+                const m = Math.hypot(vx, vy);
+                P.moving = m > 0;
+                if (m) {
+                    vx /= m;
+                    vy /= m;
+                    const sp = 190 * dt;
+                    const ox = P.x,
+                        oy = P.y;
+                    if (!hit(P.x + vx * sp, P.y))
+                        P.x += vx * sp;
+                    if (!hit(P.x, P.y + vy * sp))
+                        P.y += vy * sp;
+                    if (vx)
+                        P.dir = vx > 0 ? 1 : -1;
+                    P.walk += dt;
+                    if (P.tx !== null && Math.hypot(P.x - ox, P.y - oy) < 0.01)
+                        P.tx = null;
+                }
+                const nr = ROOMS.find(r => inRect(P.x, P.y, r.zone)) || null;
+                if (nr !== nearRoom) {
+                    nearRoom = nr;
+                    updateEnter();
+                }
+            }
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawGround();
+            drawISP(T);
+            TREES.filter(t => t.y < P.y).forEach(drawTree);
+            ROOMS.forEach(r => drawRoom(r, T));
+            drawCables(T);
+            drawPlayer();
+            TREES.filter(t => t.y >= P.y).forEach(drawTree);
+            drawPrompt(T);
+            if (flash > 0) {
+                ctx.fillStyle = 'rgba(255,201,60,' + (flash * 0.25) + ')';
+                ctx.fillRect(0, 0, W, H);
+                flash -= dt;
+            }
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+
+        function updateEnter() {
+            const b = $('enterBtn');
+            if (!nearRoom) {
+                b.hidden = true;
+                return;
+            }
+            const r = nearRoom,
+                locked = r.mission > 0 && !unlocked(r.mission);
+            b.hidden = false;
+            b.classList.toggle('locked', locked);
+            b.textContent = locked ? '🔒 ' + r.name + ' terkunci' : 'Masuk ' + r.name + (r.mission ? ' · Misi ' + r.mission : '');
+        }
+        function enterRoom(r) {
+            if (!r)
+                return;
+            if (r.mission > 0 && !unlocked(r.mission)) {
+                toast('Ruangan ini masih terkunci. Selesaikan Misi ' + (r.mission - 1) + ' dulu.');
+                return;
+            }
+            openMission(r.mission);
+        }
+        function walkToRoom(r) {
+            if (!r)
+                return;
+            P.tx = r.doorPt.x;
+            P.ty = r.doorPt.y;
+            cv.focus({
+                preventScroll: true
+            });
+            cv.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+        $('enterBtn').onclick = () => enterRoom(nearRoom);
+
+        window.addEventListener('keydown', e => {
+            if (paused)
+                return;
+            const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) {
+                keys[k] = true;
+                e.preventDefault();
+            }
+            else if (['w', 'a', 's', 'd'].includes(k) && document.activeElement.tagName !== 'INPUT') {
+                keys[k] = true;
+            }
+            else if (k === 'Enter' && nearRoom && document.activeElement.tagName !== 'BUTTON') {
+                e.preventDefault();
+                enterRoom(nearRoom);
+            }
+        });
+        window.addEventListener('keyup', e => {
+            const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+            keys[k] = false;
+        });
+        window.addEventListener('blur', () => {
+            for (const k in keys)
+                keys[k] = false;
+        });
+        cv.addEventListener('pointerdown', e => {
+            if (paused)
+                return;
+            const rc = cv.getBoundingClientRect();
+            const x = (e.clientX - rc.left) / rc.width * W,
+                y = (e.clientY - rc.top) / rc.height * H;
+            const r = ROOMS.find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
+            if (r) {
+                if (nearRoom === r) {
+                    enterRoom(r);
+                    return;
+                }
+                P.tx = r.doorPt.x;
+                P.ty = r.doorPt.y;
+            }
+            else {
+                P.tx = Math.max(BOUND.x1 + P.r, Math.min(BOUND.x2 - P.r, x));
+                P.ty = Math.max(BOUND.y1 + P.r, Math.min(BOUND.y2 - P.r, y));
+            }
+        });
+
+        /* ---------------- Mission sheet ---------------- */
+        let cleanup = null;
+        function openMission(n) {
+            paused = true;
+            for (const k in keys)
+                keys[k] = false;
+            $('missionOv').hidden = false;
+            document.body.style.overflow = 'hidden';
+            const body = $('mBody');
+            body.innerHTML = '';
+            if (n === 0) {
+                $('mEyebrow').textContent = 'Perpustakaan';
+                $('mTitle').textContent = 'Kamus Jaringan';
+                renderKamus(body);
+            }
+            else {
+                $('mEyebrow').textContent = 'Misi ' + n + ' · ' + MISSIONS[n].room;
+                $('mTitle').textContent = MISSIONS[n].title;
+                ({
+                    1: m1,
+                    2: m2,
+                    3: m3,
+                    4: m4
+                })[n](body);
+            }
+            $('missionOv').scrollTop = 0;
+            $('mClose').focus({
+                preventScroll: true
+            });
+        }
+        function closeMission() {
+            if (cleanup) {
+                cleanup();
+                cleanup = null;
+            }
+            $('missionOv').hidden = true;
+            document.body.style.overflow = '';
+            paused = false;
+            cv.focus({
+                preventScroll: true
+            });
+        }
+        $('mClose').onclick = closeMission;
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if (!$('missionOv').hidden)
+                    closeMission();
+                if (!$('raporOv').hidden)
+                    closeRapor();
+            }
+        });
+
+        /* Generic two-choice quiz */
+        function runQuiz(root, items, opt) {
+            let i = 0,
+                correct = 0;
+            const res = [];
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+            root.appendChild(wrap);
+            function prog() {
+                return '<div class="progress">' + items.map((_, k) => `<i class="${k < i ? (res[k] ? 'ok' : 'bad') : k === i ? 'cur' : ''}"></i>`).join('') + '</div>';
+            }
+            function show() {
+                if (i >= items.length) {
+                    opt.onDone(correct, wrap);
+                    return;
+                }
+                const it = items[i];
+                wrap.innerHTML = prog() + `<p class="eyebrow">Soal ${i + 1} dari ${items.length}</p><div class="qcard" id="qc">${esc(it.t)}</div>
+                      <div class="bins"><button type="button" class="bin a" data-v="${opt.labels[0]}"><b>${opt.labels[0]}</b><span>${opt.hints[0]}</span></button>
+                      <button type="button" class="bin b" data-v="${opt.labels[1]}"><b>${opt.labels[1]}</b><span>${opt.hints[1]}</span></button></div><div id="fb"></div>`;
+                wrap.querySelectorAll('.bin').forEach(b => b.onclick = () => answer(b.dataset.v));
+            }
+            function answer(v) {
+                const it = items[i];
+                const ok = v === it.a;
+                res[i] = ok;
+                if (ok)
+                    correct++;
+                const qc = wrap.querySelector('#qc');
+                qc.classList.add(v === opt.labels[0] ? 'flyL' : 'flyR');
+                wrap.querySelectorAll('.bin').forEach(b => b.disabled = true);
+                const fb = wrap.querySelector('#fb');
+                fb.innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}"><b>${ok ? 'Tepat!' : 'Belum tepat.'}</b><span>Jawaban: <strong>${it.a}</strong>. ${esc(it.w)}</span><div><button type="button" class="btn dark" id="nx">${i + 1 < items.length ? 'Soal berikutnya →' : 'Lihat hasil'}</button></div></div>`;
+                const nx = fb.querySelector('#nx');
+                nx.focus({
+                    preventScroll: true
+                });
+                nx.onclick = () => {
+                    i++;
+                    show();
+                };
+            }
+            show();
+        }
+
+        /* ---- Misi 1 ---- */
+        const M1_POOL = [
+        {
+            t: 'Tiga laptop di ruang guru mencetak ke satu printer yang sama.',
+            a: 'LAN',
+            w: 'Semua perangkat ada di satu ruangan dan berbagi printer. Tidak perlu internet.'
+        },
+        {
+            t: 'Kamu mengirim foto ke laptop teman sebangku lewat WiFi sekolah, tanpa memakai kuota internet.',
+            a: 'LAN',
+            w: 'Datanya hanya berpindah di dalam jaringan sekolah. Jaraknya dekat dan tidak keluar ke internet.'
+        },
+        {
+            t: 'Dua komputer di rumah bermain game bersama lewat kabel LAN saat internet sedang mati.',
+            a: 'LAN',
+            w: 'Tetap bisa berjalan walau internet mati. Artinya datanya hanya lewat jaringan lokal di rumah.'
+        },
+        {
+            t: 'Komputer di ruang TU membuka folder data siswa yang disimpan di server sekolah.',
+            a: 'LAN',
+            w: 'Server ada di gedung sekolah yang sama. Ini berbagi data di dalam jaringan lokal.'
+        },
+        {
+            t: 'Kasir minimarket mengirim data penjualan ke komputer gudang di bangunan yang sama.',
+            a: 'LAN',
+            w: 'Kasir dan gudang ada di satu bangunan, jadi cukup jaringan lokal.'
+        },
+        {
+            t: 'Smart TV di ruang keluarga memutar film yang tersimpan di laptop kakak lewat WiFi rumah.',
+            a: 'LAN',
+            w: 'Filmnya ada di laptop di rumah yang sama, jadi datanya tidak keluar ke internet.'
+        },
+        {
+            t: 'Kamu video call dengan sepupu yang tinggal di Jepang.',
+            a: 'Internet',
+            w: 'Jaraknya antarnegara. Datanya harus melewati banyak jaringan di seluruh dunia.'
+        },
+        {
+            t: 'Kamu mengumpulkan tugas di Google Classroom dari rumah.',
+            a: 'Internet',
+            w: 'Server Google Classroom berada jauh di luar rumahmu, jadi datanya lewat internet.'
+        },
+        {
+            t: 'Ayah memesan tiket kereta lewat aplikasi di HP.',
+            a: 'Internet',
+            w: 'Aplikasi menghubungi server perusahaan kereta di tempat lain melalui internet.'
+        },
+        {
+            t: 'Kamu mengunggah video kegiatan kelas ke YouTube.',
+            a: 'Internet',
+            w: 'Video dikirim ke server YouTube yang letaknya jauh, jadi lewat internet.'
+        },
+        {
+            t: 'Guru mengunduh buku digital dari situs resmi Kementerian Pendidikan.',
+            a: 'Internet',
+            w: 'Situs itu ada di server di luar sekolah, jadi aksesnya lewat internet.'
+        },
+        {
+            t: 'Kamu bermain game online melawan pemain dari Brasil.',
+            a: 'Internet',
+            w: 'Pemainnya ada di benua lain. Jaringan lokal tidak menjangkau sejauh itu.'
+        }
+        ];
+        function m1(body) {
+            body.innerHTML = `<p class="lead">Baca setiap kejadian, lalu pilih: apakah datanya hanya berpindah di <b>jaringan lokal (LAN)</b>, atau harus lewat <b>internet</b>? Kamu perlu minimal <b>6 dari 8</b> benar untuk menyelesaikan misi.</p>
+              <div class="note"><b>Petunjuk:</b> tanyakan pada dirimu, "Kalau internet mati, apakah ini masih bisa jalan?" Kalau masih bisa, kemungkinan besar itu LAN.</div><div id="q"></div>`;
+            const items = shuffle(shuffle(M1_POOL.filter(x => x.a === 'LAN')).slice(0, 4).concat(shuffle(M1_POOL.filter(x => x.a === 'Internet')).slice(0, 4)));
+            runQuiz(body.querySelector('#q'), items, {
+                labels: ['LAN', 'Internet'],
+                hints: ['area terbatas: rumah, sekolah, kantor', 'jangkauan luas, lintas kota & negara'],
+                onDone: (c, wrap) => {
+                    const stars = c === 8 ? 3 : c >= 7 ? 2 : c >= 6 ? 1 : 0;
+                    wrap.innerHTML = `<div class="result"><div class="big">${c} / 8 benar</div><div class="stars">${starStr(stars)}</div>
+                          <p class="lead">${stars ? 'Kamu sudah bisa membedakan LAN dan internet.' : 'Belum cukup. Baca lagi penjelasan tiap soal, lalu coba sekali lagi.'}</p>
+                          <div class="note" style="text-align:left"><b>Ingat:</b> LAN mencakup area terbatas (rumah, sekolah, kantor) dan tetap bisa dipakai berbagi data walau internet mati. Internet adalah gabungan jutaan jaringan di seluruh dunia, jadi jangkauannya sangat luas.</div>
+                          <div class="row" style="justify-content:center"><button class="btn ghost" type="button" id="again">Main lagi (soal acak)</button>${stars ? '<button class="btn dark" type="button" id="back">Kembali ke peta</button>' : ''}</div></div>`;
+                    if (stars)
+                        completeMission(1, stars);
+                    wrap.querySelector('#again').onclick = () => m1(body);
+                    const bk = wrap.querySelector('#back');
+                    if (bk)
+                        bk.onclick = closeMission;
+                }
+            });
+        }
+
+        /* ---- SVG helpers ---- */
+        const NS = 'http://www.w3.org/2000/svg';
+        function svgEl(tag, attrs, parent) {
+            const e = document.createElementNS(NS, tag);
+            for (const k in attrs)
+                e.setAttribute(k, attrs[k]);
+            if (parent)
+                parent.appendChild(e);
+            return e;
+        }
+        const ICON = {
+            pc: () => `<rect x="-17" y="-15" width="34" height="24" rx="3" fill="#2b3a63" stroke="#0f1830" stroke-width="2"/><rect x="-13" y="-11" width="26" height="16" rx="1" fill="#7fd3ff"/><rect x="-3" y="9" width="6" height="5" fill="#2b3a63"/><rect x="-10" y="13" width="20" height="4" rx="2" fill="#2b3a63"/>`,
+            switch: () => `<rect x="-24" y="-10" width="48" height="20" rx="4" fill="#3b8beb" stroke="#123a6b" stroke-width="2"/>${[-17, -10, -3, 4, 11].map(x => `<rect x="${x}" y="-2" width="5" height="6" fill="#123a6b"/>`).join('')}<circle cx="18" cy="-4" r="2" fill="#7CFFB2"/><circle cx="18" cy="3" r="2" fill="#7CFFB2"/>`,
+            router: () => `<line x1="-12" y1="-6" x2="-17" y2="-22" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/><line x1="12" y1="-6" x2="17" y2="-22" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/><rect x="-22" y="-7" width="44" height="18" rx="5" fill="#ffc93c" stroke="#2a1d00" stroke-width="2"/>${[-12, -5, 2].map(x => `<circle cx="${x}" cy="2" r="2" fill="#25a866"/>`).join('')}<rect x="8" y="-1" width="8" height="5" rx="1" fill="#2a1d00"/>`,
+            cloud: () => `<g fill="#fff" stroke="#8aa3cc" stroke-width="2"><circle cx="-18" cy="4" r="14"/><circle cx="2" cy="-6" r="18"/><circle cx="21" cy="5" r="13"/></g><rect x="-18" y="2" width="40" height="16" fill="#fff"/><path d="M-32 6 A14 14 0 0 0 -18 18 L21 18 A13 13 0 0 0 34 5" fill="none" stroke="#8aa3cc" stroke-width="2"/><text x="1" y="9" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="13" fill="#1b2440">Internet</text>`,
+            tower: () => `<path d="M-16 24 L0 -26 L16 24 M-10 6 L10 6 M-6 -8 L6 -8 M-12 14 L12 14" stroke="#55607e" stroke-width="3" fill="none" stroke-linejoin="round"/><circle cx="0" cy="-28" r="5" fill="#e5484d"/>`,
+            unknown: () => `<rect x="-24" y="-18" width="48" height="36" rx="8" fill="#fff" stroke="#55607e" stroke-width="2.5" stroke-dasharray="6 5"/><text x="0" y="8" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="24" fill="#55607e">?</text>`
+        };
+        function placeIcon(g, kind, x, y, scale) {
+            const n = svgEl('g', {
+                transform: `translate(${x},${y}) scale(${scale || 1})`
+            }, g);
+            n.innerHTML = ICON[kind]();
+            return n;
+        }
+        function animatePacket(svg, pts, opts) {
+            return new Promise(res => {
+                const dot = svgEl('circle', {
+                    r: 9,
+                    fill: opts.color || '#ffc93c',
+                    stroke: '#2a1d00',
+                    'stroke-width': 2.5
+                }, svg);
+                const L = polyLen(pts),
+                    stopAt = opts.stopAt != null ? opts.stopAt : L;
+                const dur = Math.max(600, stopAt / 0.32);
+                const t0 = performance.now();
+                function step(now) {
+                    const k = Math.min(1, (now - t0) / dur);
+                    const q = polyAt(pts, stopAt * k);
+                    dot.setAttribute('cx', q[0]);
+                    dot.setAttribute('cy', q[1]);
+                    if (k < 1)
+                        requestAnimationFrame(step);
+                    else {
+                        if (opts.fail) {
+                            dot.setAttribute('fill', '#e5484d');
+                            const x = svgEl('text', {
+                                x: q[0],
+                                y: q[1] - 16,
+                                'text-anchor': 'middle',
+                                'font-size': 22,
+                                'font-weight': 800,
+                                fill: '#e5484d',
+                                'font-family': 'Baloo 2, sans-serif'
+                            }, svg);
+                            x.textContent = '✕';
+                            setTimeout(() => {
+                                x.remove();
+                                dot.remove();
+                                res();
+                            }, 1100);
+                        }
+                        else {
+                            dot.setAttribute('fill', '#25a866');
+                            setTimeout(() => {
+                                dot.remove();
+                                res();
+                            }, 500);
+                        }
+                    }
+                }
+                requestAnimationFrame(step);
+            });
+        }
+
+        /* ---- Misi 2 ---- */
+        const M2_POOL = [
+        {
+            t: 'Menambah 8 komputer baru di lab yang sama agar bisa saling berbagi file.',
+            a: 'Switch',
+            w: 'Semua komputer ada di jaringan yang sama, jadi switch sudah cukup.'
+        },
+        {
+            t: 'Menghubungkan jaringan rumah ke internet dari provider (ISP).',
+            a: 'Router',
+            w: 'Jaringan rumah dan jaringan ISP adalah dua jaringan berbeda. Penghubungnya router.'
+        },
+        {
+            t: 'Menghubungkan jaringan gedung SD dengan jaringan gedung SMP yang terpisah.',
+            a: 'Router',
+            w: 'Dua jaringan yang berbeda dihubungkan dengan router.'
+        },
+        {
+            t: 'Ruang guru kekurangan colokan kabel LAN untuk 6 laptop di jaringan yang sama.',
+            a: 'Switch',
+            w: 'Switch menambah colokan untuk perangkat di jaringan yang sama.'
+        },
+        {
+            t: 'Kantor cabang di kota lain ingin tersambung dengan jaringan kantor pusat.',
+            a: 'Router',
+            w: 'Kantor cabang dan kantor pusat punya jaringan masing-masing. Router menghubungkan keduanya.'
+        },
+        {
+            t: 'Menghubungkan 3 komputer, 1 printer, dan 1 scanner dalam satu ruangan.',
+            a: 'Switch',
+            w: 'Semua perangkat ada di satu jaringan dalam satu ruangan, jadi pakai switch.'
+        }
+        ];
+        function m2(body) {
+            const st = {
+                A: null,
+                B: null,
+                pass1: false,
+                pass2: false,
+                wrong: 0,
+                busy: false
+            };
+            body.innerHTML = `<p class="lead"><b>Bagian 1.</b> Lab TU punya 4 komputer, tapi belum ada penghubungnya. Pasang perangkat di <b>Slot A</b> dan <b>Slot B</b>, lalu jalankan kedua uji. Misi lanjut ke bagian 2 setelah keduanya berhasil dengan perangkat yang paling tepat.</p>
+              <div class="simbox"><svg id="sv" viewBox="0 0 760 360" aria-label="Simulasi jaringan lab TU"></svg></div>
+              <div class="ctrl">
+                <div class="box"><label>Slot A: menghubungkan 4 komputer</label><div class="seg" id="segA"><button type="button" data-v="switch" aria-pressed="false">Switch</button><button type="button" data-v="router" aria-pressed="false">Router</button></div></div>
+                <div class="box"><label>Slot B: menghubungkan jaringan sekolah ke ISP</label><div class="seg" id="segB"><button type="button" data-v="switch" aria-pressed="false">Switch</button><button type="button" data-v="router" aria-pressed="false">Router</button></div></div>
+              </div>
+              <div class="row"><button class="btn" type="button" id="t1">▶ Uji 1: PC-1 kirim file ke PC-3</button><button class="btn" type="button" id="t2">▶ Uji 2: PC-1 buka video dari internet</button></div>
+              <div class="log" id="log"></div><div id="part2"></div>`;
+            const sv = body.querySelector('#sv');
+            const pcs = [[80, 55], [80, 135], [80, 215], [80, 295]];
+            const A = [270, 175],
+                B = [440, 175],
+                ISP = [580, 175],
+                NET = [690, 175];
+            svgEl('rect', {
+                x: 16,
+                y: 14,
+                width: 340,
+                height: 330,
+                rx: 16,
+                fill: '#dff0ff',
+                stroke: '#9cc3ec',
+                'stroke-width': 2
+            }, sv);
+            svgEl('rect', {
+                x: 520,
+                y: 14,
+                width: 226,
+                height: 330,
+                rx: 16,
+                fill: '#fff1c9',
+                stroke: '#e8c76a',
+                'stroke-width': 2
+            }, sv);
+            const t1 = svgEl('text', {
+                x: 30,
+                y: 38,
+                'font-family': 'Lexend, sans-serif',
+                'font-size': 14,
+                'font-weight': 600,
+                fill: '#1d4f86'
+            }, sv);
+            t1.textContent = 'Jaringan Sekolah';
+            const t2 = svgEl('text', {
+                x: 534,
+                y: 38,
+                'font-family': 'Lexend, sans-serif',
+                'font-size': 14,
+                'font-weight': 600,
+                fill: '#8a6400'
+            }, sv);
+            t2.textContent = 'Jaringan ISP / Internet';
+            const lines = svgEl('g', {}, sv);
+            const ln = (a, b) => svgEl('line', {
+                x1: a[0],
+                y1: a[1],
+                x2: b[0],
+                y2: b[1],
+                stroke: '#55607e',
+                'stroke-width': 4,
+                'stroke-linecap': 'round'
+            }, lines);
+            pcs.forEach(p => ln(p, A));
+            ln(A, B);
+            ln(B, ISP);
+            ln(ISP, NET);
+            pcs.forEach((p, i) => {
+                placeIcon(sv, 'pc', p[0], p[1]);
+                const t = svgEl('text', {
+                    x: p[0] + 28,
+                    y: p[1] + 5,
+                    'font-family': 'JetBrains Mono, monospace',
+                    'font-size': 13,
+                    fill: '#1b2440'
+                }, sv);
+                t.textContent = 'PC-' + (i + 1);
+            });
+            placeIcon(sv, 'tower', ISP[0], ISP[1]);
+            const tt = svgEl('text', {
+                x: ISP[0],
+                y: ISP[1] + 44,
+                'text-anchor': 'middle',
+                'font-family': 'Lexend, sans-serif',
+                'font-size': 12,
+                fill: '#55607e'
+            }, sv);
+            tt.textContent = 'ISP';
+            placeIcon(sv, 'cloud', NET[0], NET[1], 1.1);
+            const slotG = {
+                A: svgEl('g', {
+                    style: 'cursor:pointer'
+                }, sv),
+                B: svgEl('g', {
+                    style: 'cursor:pointer'
+                }, sv)
+            };
+            const sl = (k, p) => {
+                const t = svgEl('text', {
+                    x: p[0],
+                    y: p[1] + 40,
+                    'text-anchor': 'middle',
+                    'font-family': 'Lexend, sans-serif',
+                    'font-size': 13,
+                    'font-weight': 600,
+                    fill: '#1b2440'
+                }, sv);
+                t.textContent = 'Slot ' + k;
+            };
+            sl('A', A);
+            sl('B', B);
+            function drawSlots() {
+                ['A', 'B'].forEach(k => {
+                    const g = slotG[k];
+                    g.innerHTML = '';
+                    const p = k === 'A' ? A : B;
+                    svgEl('rect', {
+                        x: p[0] - 32,
+                        y: p[1] - 28,
+                        width: 64,
+                        height: 56,
+                        fill: 'transparent'
+                    }, g);
+                    placeIcon(g, st[k] || 'unknown', p[0], p[1], 1.15);
+                });
+                ['A', 'B'].forEach(k => body.querySelectorAll('#seg' + k + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === st[k]))));
+            }
+            function setSlot(k, v) {
+                if (st.busy)
+                    return;
+                if (st[k] !== v) {
+                    st[k] = v;
+                    st.pass1 = false;
+                    st.pass2 = false;
+                }
+                drawSlots();
+            }
+            ['A', 'B'].forEach(k => {
+                body.querySelectorAll('#seg' + k + ' button').forEach(b => b.onclick = () => setSlot(k, b.dataset.v));
+                slotG[k].addEventListener('click', () => setSlot(k, st[k] === 'switch' ? 'router' : 'switch'));
+            });
+            drawSlots();
+            const log = body.querySelector('#log');
+            function addLog(cls, html) {
+                const d = document.createElement('div');
+                d.className = cls;
+                d.innerHTML = html;
+                log.prepend(d);
+                while (log.children.length > 4)
+                    log.lastChild.remove();
+            }
+            async function test(n) {
+                if (st.busy)
+                    return;
+                if (!st.A || (n === 2 && !st.B)) {
+                    addLog('warn', 'Pasang perangkat di ' + (!st.A ? 'Slot A' : 'Slot B') + ' dulu sebelum menguji.');
+                    return;
+                }
+                st.busy = true;
+                if (n === 1) {
+                    const path = [pcs[0], A, pcs[2]];
+                    await animatePacket(sv, path, {});
+                    if (st.A === 'switch') {
+                        st.pass1 = true;
+                        addLog('ok', '✅ <b>Uji 1 berhasil.</b> PC-1 dan PC-3 ada di jaringan yang sama, dan switch meneruskan file ke komputer tujuan.');
+                    }
+                    else {
+                        st.pass1 = false;
+                        st.wrong++;
+                        addLog('warn', '⚠️ <b>File sampai, tapi kurang tepat.</b> Router memang bisa, tetapi untuk perangkat di <b>jaringan yang sama</b> cukup pakai switch. Router dipakai untuk menghubungkan <b>dua jaringan berbeda</b>.');
+                    }
+                } else {
+                    const path = [pcs[0], A, B, ISP, NET];
+                    if (st.B === 'router') {
+                        await animatePacket(sv, path, {});
+                        st.pass2 = true;
+                        addLog('ok', '✅ <b>Uji 2 berhasil.</b> Router di Slot B menghubungkan jaringan sekolah dengan jaringan ISP, jadi video dari internet bisa dibuka.');
+                    }
+                    else {
+                        const stop = polyLen([pcs[0], A, B]) + 18;
+                        await animatePacket(sv, path, {
+                            stopAt: stop,
+                            fail: true
+                        });
+                        st.pass2 = false;
+                        st.wrong++;
+                        addLog('bad', '❌ <b>Paket berhenti di Slot B.</b> Switch hanya menghubungkan perangkat di jaringan yang sama. Jaringan sekolah dan jaringan ISP adalah <b>dua jaringan berbeda</b>, jadi butuh <b>router</b>.');
+                    }
+                }
+                st.busy = false;
+                if (st.pass1 && st.pass2 && st.A === 'switch' && st.B === 'router' && !body.querySelector('#part2').hasChildNodes())
+                    part2();
+            }
+            body.querySelector('#t1').onclick = () => test(1);
+            body.querySelector('#t2').onclick = () => test(2);
+            function part2() {
+                const simStars = st.wrong === 0 ? 3 : st.wrong <= 2 ? 2 : 1;
+                const p = body.querySelector('#part2');
+                p.innerHTML = `<div class="feedback ok"><b>Jaringan lab tersambung!</b><span>Switch menghubungkan komputer di jaringan yang sama. Router menghubungkan jaringan sekolah ke jaringan lain (ISP, lalu internet).</span></div>
+                      <p class="lead" style="margin-top:6px"><b>Bagian 2.</b> Tim IT punya 4 kebutuhan lain. Pilih perangkat yang tepat (minimal 3 benar).</p><div id="q2"></div>`;
+                p.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                runQuiz(p.querySelector('#q2'), shuffle(M2_POOL).slice(0, 4), {
+                    labels: ['Switch', 'Router'],
+                    hints: ['perangkat di jaringan yang sama', 'menghubungkan dua jaringan berbeda'],
+                    onDone: (c, wrap) => {
+                        const qs = c === 4 ? 3 : c === 3 ? 2 : 0;
+                        if (!qs) {
+                            wrap.innerHTML = `<div class="result"><div class="big">${c} / 4 benar</div><p class="lead">Belum cukup. Ingat kunci utamanya: <b>sama jaringan → switch</b>, <b>beda jaringan → router</b>.</p><button class="btn dark" type="button" id="rq">Coba bagian 2 lagi</button></div>`;
+                            wrap.querySelector('#rq').onclick = () => part2();
+                            return;
+                        }
+                        const stars = Math.min(simStars, qs);
+                        wrap.innerHTML = `<div class="result"><div class="big">Misi 2 selesai</div><div class="stars">${starStr(stars)}</div><p class="lead">Uji yang keliru: ${st.wrong} · Kebutuhan benar: ${c}/4</p><div class="row" style="justify-content:center"><button class="btn ghost" type="button" id="again">Ulangi misi</button><button class="btn dark" type="button" id="back">Kembali ke peta</button></div></div>`;
+                        completeMission(2, stars);
+                        wrap.querySelector('#again').onclick = () => m2(body);
+                        wrap.querySelector('#back').onclick = closeMission;
+                    }
+                });
+            }
+        }
+
+        /* ---- Misi 3 ---- */
+        const M3_LEVELS = [
+        {
+            nodes: {
+                N1: [300, 190],
+                N2: [140, 80],
+                N3: [460, 80],
+                N4: [140, 300],
+                N5: [460, 300]
+            },
+            cloud: null,
+            edges: [['N1', 'N2'], ['N1', 'N3'], ['N1', 'N4'], ['N1', 'N5']],
+            why: 'N1 terhubung ke 4 node, sedangkan node lain hanya terhubung ke 1 node. Node pusat yang menghubungkan perangkat di jaringan yang sama adalah <b>switch</b>. Node di ujung adalah <b>komputer</b>.'
+        },
+        {
+            nodes: {
+                N1: [100, 80],
+                N2: [100, 300],
+                N3: [270, 190],
+                N4: [270, 340]
+            },
+            cloud: [490, 190],
+            edges: [['N3', 'N1'], ['N3', 'N2'], ['N3', 'N4'], ['N3', 'NET']],
+            why: 'N3 menghubungkan komputer-komputer dengan <b>internet</b>, yaitu dua jaringan berbeda, jadi N3 adalah <b>router</b>. Contohnya router WiFi di rumah yang juga punya colokan untuk beberapa perangkat.'
+        },
+        {
+            nodes: {
+                N1: [60, 165],
+                N2: [175, 240],
+                N3: [60, 320],
+                N4: [335, 110],
+                N5: [195, 350],
+                N6: [455, 250],
+                N7: [565, 190],
+                N8: [565, 320],
+                N9: [420, 350]
+            },
+            cloud: [530, 62],
+            edges: [['N2', 'N1'], ['N2', 'N3'], ['N2', 'N5'], ['N2', 'N4'], ['N6', 'N7'], ['N6', 'N8'], ['N6', 'N9'], ['N6', 'N4'], ['N4', 'NET']],
+            why: 'N2 dan N6 masing-masing mengumpulkan komputer dalam satu jaringan, jadi keduanya <b>switch</b>. N4 menghubungkan kedua switch ke <b>internet</b>, jadi N4 adalah <b>router</b>. Begitulah jaringan sekolah biasanya disusun.'
+        }
+        ];
+        const ROLE_NAME = {
+            pc: 'Komputer',
+            switch: 'Switch',
+            router: 'Router'
+        };
+        function expectedRole(L, id) {
+            const deg = L.edges.filter(e => e.includes(id)).length;
+            if (L.edges.some(e => e.includes(id) && e.includes('NET')))
+                return 'router';
+            return deg <= 1 ? 'pc' : 'switch';
+        }
+        function m3(body) {
+            let lv = 0,
+                wrong = 0;
+            function render() {
+                const L = M3_LEVELS[lv];
+                const roles = {};
+                let sel = null,
+                    real = false,
+                    solved = false;
+                body.innerHTML = `<p class="lead">Guru menampilkan <b>abstraksi jaringan</b>: hanya titik (node) dan garis (link). Ketuk setiap node untuk memilih perannya: <b>Komputer → Switch → Router</b>. Lalu tekan <b>Periksa</b>.</p>
+                      <div class="row"><span class="eyebrow">Abstraksi ${lv + 1} dari ${M3_LEVELS.length}</span><div class="progress">${M3_LEVELS.map((_, k) => `<i class="${k < lv ? 'ok' : k === lv ? 'cur' : ''}"></i>`).join('')}</div></div>
+                      <div class="simbox"><svg id="sv" viewBox="0 0 620 400" aria-label="Abstraksi jaringan"></svg></div>
+                      <div class="legend"><span>⚪ belum dipilih</span><span>🖥️ Komputer</span><span>🟦 Switch</span><span>🟨 Router</span><span id="info" style="color:#1b2440;font-weight:600"></span></div>
+                      <div class="row"><button class="btn dark" type="button" id="chk">Periksa</button><button class="btn ghost" type="button" id="hint">Minta petunjuk</button><button class="btn" type="button" id="realBtn" hidden>Ubah jadi jaringan nyata</button><button class="btn ok" type="button" id="next" hidden></button></div>
+                      <div id="fb"></div>`;
+                const sv = body.querySelector('#sv');
+                const pos = Object.assign({}, L.nodes);
+                if (L.cloud)
+                    pos.NET = L.cloud;
+                const eg = svgEl('g', {}, sv),
+                    ng = svgEl('g', {}, sv);
+                function draw() {
+                    eg.innerHTML = '';
+                    ng.innerHTML = '';
+                    L.edges.forEach(([a, b]) => svgEl('line', {
+                        x1: pos[a][0],
+                        y1: pos[a][1],
+                        x2: pos[b][0],
+                        y2: pos[b][1],
+                        stroke: real ? '#3b8beb' : '#55607e',
+                        'stroke-width': real ? 5 : 3.5,
+                        'stroke-linecap': 'round'
+                    }, eg));
+                    if (L.cloud)
+                        placeIcon(ng, 'cloud', L.cloud[0], L.cloud[1], 1.2);
+                    Object.keys(L.nodes).forEach(id => {
+                        const [x, y] = L.nodes[id];
+                        const g = svgEl('g', {
+                            style: 'cursor:pointer',
+                            tabindex: 0,
+                            role: 'button',
+                            'aria-label': 'Node ' + id + (roles[id] ? ' sebagai ' + ROLE_NAME[roles[id]] : '')
+                        }, ng);
+                        const r = roles[id];
+                        if (real && r) {
+                            svgEl('circle', {
+                                cx: x,
+                                cy: y,
+                                r: 30,
+                                fill: '#fff',
+                                stroke: '#c9d7ea',
+                                'stroke-width': 2
+                            }, g);
+                            placeIcon(g, r, x, y, 1.1);
+                            const t = svgEl('text', {
+                                x: x,
+                                y: y + 46,
+                                'text-anchor': 'middle',
+                                'font-family': 'Lexend, sans-serif',
+                                'font-size': 12,
+                                'font-weight': 600,
+                                fill: '#1b2440'
+                            }, g);
+                            t.textContent = ROLE_NAME[r];
+                        }
+                        else {
+                            const fill = r === 'pc' ? '#2b3a63' : r === 'switch' ? '#3b8beb' : r === 'router' ? '#ffc93c' : '#ffffff';
+                            const ring = g.wrongFlag;
+                            svgEl('circle', {
+                                cx: x,
+                                cy: y,
+                                r: 24,
+                                fill: fill,
+                                stroke: sel === id ? '#e0a400' : '#1b2440',
+                                'stroke-width': sel === id ? 5 : 3
+                            }, g);
+                            const t = svgEl('text', {
+                                x: x,
+                                y: y + 5,
+                                'text-anchor': 'middle',
+                                'font-family': 'JetBrains Mono, monospace',
+                                'font-size': 14,
+                                'font-weight': 500,
+                                fill: r && r !== 'router' ? '#fff' : '#1b2440'
+                            }, g);
+                            t.textContent = id;
+                            if (r) {
+                                const lb = svgEl('text', {
+                                    x: x,
+                                    y: y + 42,
+                                    'text-anchor': 'middle',
+                                    'font-family': 'Lexend, sans-serif',
+                                    'font-size': 12,
+                                    'font-weight': 600,
+                                    fill: '#1b2440'
+                                }, g);
+                                lb.textContent = ROLE_NAME[r];
+                            }
+                            if (badSet.has(id))
+                                svgEl('circle', {
+                                    cx: x,
+                                    cy: y,
+                                    r: 31,
+                                    fill: 'none',
+                                    stroke: '#e5484d',
+                                    'stroke-width': 3,
+                                    'stroke-dasharray': '5 4'
+                                }, g);
+                        }
+                        const act = () => {
+                            if (solved)
+                                return;
+                            const order = [undefined, 'pc', 'switch', 'router'];
+                            roles[id] = order[(order.indexOf(roles[id]) + 1) % 4];
+                            if (!roles[id])
+                                delete roles[id];
+                            sel = id;
+                            badSet.delete(id);
+                            const deg = L.edges.filter(e => e.includes(id)).length;
+                            body.querySelector('#info').textContent = id + ' terhubung ke ' + deg + ' node' + (L.edges.some(e => e.includes(id) && e.includes('NET')) ? ' (termasuk Internet)' : '');
+                            draw();
+                        };
+                        g.addEventListener('click', act);
+                        g.addEventListener('keydown', e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                act();
+                            }
+                        });
+                    });
+                }
+                const badSet = new Set();
+                draw();
+                const fb = body.querySelector('#fb');
+                body.querySelector('#hint').onclick = () => {
+                    fb.innerHTML = `<div class="note"><b>Petunjuk:</b> hitung berapa link yang dimiliki setiap node. Node yang hanya punya <b>1 link</b> biasanya perangkat ujung (komputer). Node yang punya <b>banyak link</b> adalah penghubung. Kalau penghubung itu tersambung ke <b>jaringan lain atau internet</b>, ia adalah router.</div>`;
+                };
+                body.querySelector('#chk').onclick = () => {
+                    if (solved)
+                        return;
+                    const ids = Object.keys(L.nodes);
+                    const empty = ids.filter(id => !roles[id]);
+                    if (empty.length) {
+                        fb.innerHTML = `<div class="feedback bad"><span>Masih ada ${empty.length} node yang belum dipilih perannya: ${empty.join(', ')}.</span></div>`;
+                        return;
+                    }
+                    badSet.clear();
+                    ids.forEach(id => {
+                        if (roles[id] !== expectedRole(L, id))
+                            badSet.add(id);
+                    });
+                    if (badSet.size) {
+                        wrong++;
+                        draw();
+                        fb.innerHTML = `<div class="feedback bad"><b>Belum tepat.</b><span>${badSet.size} node bergaris merah masih salah. Lihat berapa link yang dimiliki node itu, lalu coba lagi.</span></div>`;
+                        return;
+                    }
+                    solved = true;
+                    sel = null;
+                    draw();
+                    fb.innerHTML = `<div class="feedback ok"><b>Tepat!</b><span>${L.why}</span></div>`;
+                    body.querySelector('#realBtn').hidden = false;
+                    const nx = body.querySelector('#next');
+                    nx.hidden = false;
+                    nx.textContent = lv + 1 < M3_LEVELS.length ? 'Abstraksi berikutnya →' : 'Selesaikan misi';
+                    nx.onclick = () => {
+                        if (lv + 1 < M3_LEVELS.length) {
+                            lv++;
+                            render();
+                        } else
+                            finish();
+                    };
+                };
+                body.querySelector('#realBtn').onclick = () => {
+                    real = !real;
+                    body.querySelector('#realBtn').textContent = real ? 'Kembali ke abstraksi' : 'Ubah jadi jaringan nyata';
+                    draw();
+                };
+            }
+            function finish() {
+                const stars = wrong === 0 ? 3 : wrong <= 2 ? 2 : 1;
+                body.innerHTML = `<div class="result"><div class="big">Misi 3 selesai</div><div class="stars">${starStr(stars)}</div><p class="lead">Pemeriksaan yang keliru: ${wrong}</p>
+                      <div class="note" style="text-align:left"><b>Ingat:</b> <b>abstraksi</b> berarti menyederhanakan jaringan nyata menjadi node (titik) dan link (garis). Node yang terhubung ke banyak node lain adalah penghubung (switch/router), karena tugasnya meneruskan data ke banyak perangkat.</div>
+                      <div class="row" style="justify-content:center"><button class="btn ghost" type="button" id="again">Ulangi misi</button><button class="btn dark" type="button" id="back">Kembali ke peta</button></div></div>`;
+                completeMission(3, stars);
+                body.querySelector('#again').onclick = () => m3(body);
+                body.querySelector('#back').onclick = closeMission;
+            }
+            render();
+        }
+
+        /* ---- Misi 4: sandbox ---- */
+        const PORTS = {
+            pc: 1,
+            switch: 8,
+            router: 3,
+            net: 4
+        };
+        function m4(body) {
+            const G = {
+                nodes: [],
+                edges: [],
+                seq: {
+                    pc: 0,
+                    switch: 0,
+                    router: 0
+                }
+            };
+            let mode = 'move',
+                linkFrom = null,
+                drag = null,
+                busy = false;
+            function addNode(kind, x, y) {
+                const id = kind === 'net' ? 'NET' : kind + (++G.seq[kind]);
+                const label = kind === 'net' ? 'Internet' : kind === 'pc' ? 'PC-' + G.seq.pc : kind === 'switch' ? 'SW-' + G.seq.switch : 'R-' + G.seq.router;
+                G.nodes.push({
+                    id,
+                    kind,
+                    x,
+                    y,
+                    label
+                });
+                return id;
+            }
+            addNode('net', 710, 70);
+            [110, 190, 270, 350].forEach(y => addNode('pc', 80, y));
+            body.innerHTML = `<p class="lead"><b>Tantangan:</b> Ruang Guru punya <b>4 komputer</b>. Rancang jaringan agar keempat komputer bisa <b>saling kirim file</b> dan semuanya bisa <b>membuka internet</b>. Gunakan perangkat <b>seefisien mungkin</b>.</p>
+                <div class="note"><b>Aturan lab:</b> komputer punya 1 colokan kabel · switch punya 8 colokan · router punya 3 colokan · internet hanya bisa disambung lewat router.</div>
+                <div class="toolbar"><button class="btn" type="button" data-add="switch">+ Switch</button><button class="btn" type="button" data-add="router">+ Router</button><button class="btn" type="button" data-add="pc">+ Komputer</button>
+                  <span style="flex:1"></span><div class="seg" id="mode"><button type="button" data-m="move" aria-pressed="true">✋ Pindah</button><button type="button" data-m="link" aria-pressed="false">🔌 Sambung kabel</button><button type="button" data-m="del" aria-pressed="false">🗑️ Hapus</button></div></div>
+                <p class="eyebrow" id="modeHint" style="margin:0"></p>
+                <div class="simbox"><svg id="sv" viewBox="0 0 800 440" aria-label="Lab bebas jaringan"></svg></div>
+                <div class="ctrl"><div class="box"><label>Uji kirim paket</label><div class="row"><select id="from"></select><span>→</span><select id="to"></select><button class="btn" type="button" id="send">▶ Kirim</button></div></div>
+                  <div class="box"><label>Sudah yakin?</label><div class="row"><button class="btn dark" type="button" id="check">Periksa rancangan</button><button class="btn ghost" type="button" id="reset">Mulai ulang</button></div></div></div>
+                <div class="log" id="log"></div>`;
+            const sv = body.querySelector('#sv'),
+                log = body.querySelector('#log');
+            const eg = svgEl('g', {}, sv),
+                ng = svgEl('g', {}, sv);
+            const hints = {
+                move: 'Seret perangkat untuk merapikan posisinya.',
+                link: 'Ketuk perangkat pertama, lalu perangkat kedua untuk memasang kabel.',
+                del: 'Ketuk perangkat atau kabel untuk menghapusnya.'
+            };
+            function addLog(cls, html) {
+                const d = document.createElement('div');
+                d.className = cls;
+                d.innerHTML = html;
+                log.prepend(d);
+                while (log.children.length > 4)
+                    log.lastChild.remove();
+            }
+            const N = id => G.nodes.find(n => n.id === id);
+            const deg = id => G.edges.filter(e => e[0] === id || e[1] === id).length;
+            function draw() {
+                eg.innerHTML = '';
+                ng.innerHTML = '';
+                G.edges.forEach((e, i) => {
+                    const a = N(e[0]),
+                        b = N(e[1]);
+                    const hitL = svgEl('line', {
+                        x1: a.x,
+                        y1: a.y,
+                        x2: b.x,
+                        y2: b.y,
+                        stroke: 'transparent',
+                        'stroke-width': 18,
+                        style: 'cursor:' + (mode === 'del' ? 'pointer' : 'default')
+                    }, eg);
+                    svgEl('line', {
+                        x1: a.x,
+                        y1: a.y,
+                        x2: b.x,
+                        y2: b.y,
+                        stroke: '#3b8beb',
+                        'stroke-width': 4,
+                        'stroke-linecap': 'round',
+                        'pointer-events': 'none'
+                    }, eg);
+                    hitL.addEventListener('click', () => {
+                        if (mode === 'del') {
+                            G.edges.splice(i, 1);
+                            draw();
+                        }
+                    });
+                });
+                G.nodes.forEach(n => {
+                    const g = svgEl('g', {
+                        style: 'cursor:' + (mode === 'move' ? 'grab' : 'pointer')
+                    }, ng);
+                    g.dataset.id = n.id;
+                    svgEl('circle', {
+                        cx: n.x,
+                        cy: n.y,
+                        r: 32,
+                        fill: linkFrom === n.id ? '#fff1c9' : 'rgba(255,255,255,.75)',
+                        stroke: linkFrom === n.id ? '#e0a400' : '#c9d7ea',
+                        'stroke-width': linkFrom === n.id ? 4 : 2
+                    }, g);
+                    placeIcon(g, n.kind === 'net' ? 'cloud' : n.kind, n.x, n.y, n.kind === 'net' ? 1.05 : 1);
+                    if (n.kind !== 'net') {
+                        const t = svgEl('text', {
+                            x: n.x,
+                            y: n.y + 48,
+                            'text-anchor': 'middle',
+                            'font-family': 'JetBrains Mono, monospace',
+                            'font-size': 12,
+                            fill: '#1b2440'
+                        }, g);
+                        t.textContent = n.label + ' (' + deg(n.id) + '/' + PORTS[n.kind] + ')';
+                    }
+                });
+                fillSelects();
+            }
+            function fillSelects() {
+                const f = body.querySelector('#from'),
+                    t = body.querySelector('#to');
+                const fv = f.value,
+                    tv = t.value;
+                const pcs = G.nodes.filter(n => n.kind === 'pc');
+                f.innerHTML = pcs.map(n => `<option value="${n.id}">${n.label}</option>`).join('');
+                t.innerHTML = G.nodes.filter(n => n.kind === 'pc' || n.kind === 'net').map(n => `<option value="${n.id}">${n.label}</option>`).join('');
+                if ([...f.options].some(o => o.value === fv))
+                    f.value = fv;
+                if ([...t.options].some(o => o.value === tv))
+                    t.value = tv;
+                else
+                    t.value = 'NET';
+            }
+            function svgPt(e) {
+                const p = sv.createSVGPoint();
+                p.x = e.clientX;
+                p.y = e.clientY;
+                const q = p.matrixTransform(sv.getScreenCTM().inverse());
+                return {
+                    x: q.x,
+                    y: q.y
+                };
+            }
+            sv.addEventListener('pointerdown', e => {
+                const g = e.target.closest('g[data-id]');
+                if (!g || busy)
+                    return;
+                const n = N(g.dataset.id);
+                if (mode === 'move') {
+                    drag = {
+                        n,
+                        off: (() => {
+                            const p = svgPt(e);
+                            return {
+                                x: p.x - n.x,
+                                y: p.y - n.y
+                            };
+                        })()
+                    };
+                    sv.setPointerCapture(e.pointerId);
+                }
+                else if (mode === 'link') {
+                    if (!linkFrom) {
+                        linkFrom = n.id;
+                        draw();
+                        return;
+                    }
+                    if (linkFrom === n.id) {
+                        linkFrom = null;
+                        draw();
+                        return;
+                    }
+                    const a = N(linkFrom),
+                        b = n;
+                    linkFrom = null;
+                    if (G.edges.some(x => (x[0] === a.id && x[1] === b.id) || (x[1] === a.id && x[0] === b.id))) {
+                        addLog('warn', 'Kedua perangkat itu sudah tersambung.');
+                        draw();
+                        return;
+                    }
+                    if ((a.kind === 'net' && b.kind !== 'router') || (b.kind === 'net' && a.kind !== 'router')) {
+                        addLog('bad', '❌ Internet adalah jaringan lain. Yang bisa menghubungkan jaringanmu ke internet hanya <b>router</b>.');
+                        draw();
+                        return;
+                    }
+                    if (deg(a.id) >= PORTS[a.kind] || deg(b.id) >= PORTS[b.kind]) {
+                        const full = deg(a.id) >= PORTS[a.kind] ? a : b;
+                        addLog('warn', '⚠️ Colokan ' + full.label + ' sudah penuh (' + PORTS[full.kind] + ' colokan).' + (full.kind === 'pc' ? ' Komputer hanya punya 1 colokan, jadi sambungkan ke switch.' : full.kind === 'router' ? ' Tambahkan switch untuk memperbanyak colokan.' : ''));
+                        draw();
+                        return;
+                    }
+                    G.edges.push([a.id, b.id]);
+                    draw();
+                } else if (mode === 'del') {
+                    if (n.kind === 'net') {
+                        addLog('warn', 'Internet tidak bisa dihapus.');
+                        return;
+                    }
+                    G.nodes = G.nodes.filter(x => x !== n);
+                    G.edges = G.edges.filter(x => x[0] !== n.id && x[1] !== n.id);
+                    draw();
+                }
+            });
+            sv.addEventListener('pointermove', e => {
+                if (!drag)
+                    return;
+                const p = svgPt(e);
+                drag.n.x = Math.max(36, Math.min(764, p.x - drag.off.x));
+                drag.n.y = Math.max(36, Math.min(404, p.y - drag.off.y));
+                draw();
+            });
+            const endDrag = () => {
+                drag = null;
+            };
+            sv.addEventListener('pointerup', endDrag);
+            sv.addEventListener('pointercancel', endDrag);
+            body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+                const k = b.dataset.add;
+                const spots = [[300, 220], [480, 220], [300, 120], [480, 330], [390, 330], [390, 120], [600, 250], [600, 360]];
+                const sp = spots.find(s => !G.nodes.some(n => Math.hypot(n.x - s[0], n.y - s[1]) < 60)) || [400, 220];
+                if (G.nodes.length >= 16) {
+                    addLog('warn', 'Lab sudah penuh. Hapus beberapa perangkat dulu.');
+                    return;
+                }
+                addNode(k, sp[0], sp[1]);
+                draw();
+            });
+            function setMode(m) {
+                mode = m;
+                linkFrom = null;
+                body.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+                body.querySelector('#modeHint').textContent = hints[m];
+                draw();
+            }
+            body.querySelectorAll('#mode button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+            function path(a, b) {
+                const prev = {
+                        [a]: null
+                    },
+                    q = [a];
+                while (q.length) {
+                    const c = q.shift();
+                    if (c === b)
+                        break;
+                    G.edges.forEach(e => {
+                        const o = e[0] === c ? e[1] : e[1] === c ? e[0] : null;
+                        if (o && !(o in prev)) {
+                            // packets don't travel through a PC as a relay
+                            if (N(o).kind === 'pc' && o !== b) {
+                                prev[o] = c;
+                                return;
+                            }
+                            prev[o] = c;
+                            q.push(o);
+                        }
+                    });
+                }
+                if (!(b in prev))
+                    return null;
+                const out = [];
+                for (let c = b; c !== null; c = prev[c])
+                    out.unshift(c);
+                if (out.slice(1, -1).some(id => N(id).kind === 'pc'))
+                    return null;
+                return out;
+            }
+            body.querySelector('#send').onclick = async () => {
+                if (busy)
+                    return;
+                const a = body.querySelector('#from').value,
+                    b = body.querySelector('#to').value;
+                if (!a || !b || a === b) {
+                    addLog('warn', 'Pilih komputer asal dan tujuan yang berbeda.');
+                    return;
+                }
+                const p = path(a, b);
+                if (!p) {
+                    addLog('bad', '❌ Paket dari ' + N(a).label + ' tidak menemukan jalan ke ' + N(b).label + '. Periksa kabelnya: apakah semua perangkat sudah tersambung?');
+                    return;
+                }
+                busy = true;
+                await animatePacket(sv, p.map(id => [N(id).x, N(id).y]), {});
+                busy = false;
+                addLog('ok', '✅ Paket sampai! Jalurnya: ' + p.map(id => N(id).label).join(' → '));
+            };
+            body.querySelector('#check').onclick = () => {
+                const pcs = G.nodes.filter(n => n.kind === 'pc');
+                if (pcs.length < 4) {
+                    addLog('bad', 'Ruang Guru butuh minimal 4 komputer.');
+                    return;
+                }
+                const noNet = pcs.filter(p => !path(p.id, 'NET'));
+                if (noNet.length) {
+                    addLog('bad', '❌ Belum semua komputer bisa ke internet: ' + noNet.map(p => p.label).join(', ') + '.');
+                    return;
+                }
+                const sw = G.nodes.filter(n => n.kind === 'switch').length,
+                    rt = G.nodes.filter(n => n.kind === 'router').length;
+                const stars = (sw === 1 && rt === 1) ? 3 : 2;
+                addLog('ok', '✅ <b>Rancangan berhasil!</b> Semua komputer saling terhubung dan bisa ke internet. Kamu memakai ' + sw + ' switch dan ' + rt + ' router.' + (stars === 3 ? ' Ini rancangan paling efisien: switch untuk komputer di jaringan yang sama, router untuk keluar ke internet.' : ' Bisakah kamu membuatnya lebih efisien dengan perangkat yang lebih sedikit?'));
+                completeMission(4, stars);
+            };
+            body.querySelector('#reset').onclick = () => m4(body);
+            setMode('move');
+            addLog('warn', 'Mulai dengan menambah perangkat penghubung, lalu pilih <b>🔌 Sambung kabel</b>.');
+        }
+
+        /* ---- Kamus ---- */
+        const KAMUS = [
+        ['Node', 'Titik dalam gambar jaringan. Wujud nyatanya perangkat: komputer, HP, printer, server, switch, atau router.', 'Digambar sebagai lingkaran/titik.'],
+        ['Link / Edge', 'Garis penghubung antar-node. Wujud nyatanya kabel atau sinyal nirkabel (WiFi).', 'Digambar sebagai garis.'],
+        ['Abstraksi', 'Menyederhanakan sesuatu dengan hanya mengambil bagian penting. Jaringan nyata diubah menjadi node dan link.', 'Bagian dari berpikir komputasional.'],
+        ['LAN', 'Local Area Network: jaringan di area terbatas seperti rumah, sekolah, atau kantor.', 'Tetap bisa berbagi data walau internet mati.'],
+        ['Internet', 'Interconnected Network: gabungan jutaan jaringan di seluruh dunia.', 'Jangkauannya sangat luas, lintas kota dan negara.'],
+        ['Switch', 'Menghubungkan perangkat-perangkat di jaringan yang sama.', 'Contoh: menyambung semua komputer di lab.'],
+        ['Router', 'Menghubungkan dua jaringan yang berbeda dan memilih jalur pengiriman data.', 'Contoh: menyambung jaringan sekolah ke ISP.'],
+        ['ISP', 'Internet Service Provider: perusahaan penyedia layanan internet.', 'Contoh: penyedia internet rumah atau sekolah.'],
+        ['Server', 'Komputer yang menyediakan layanan atau data untuk komputer lain.', 'Contoh: server YouTube, server data sekolah.'],
+        ['Client', 'Komputer atau HP yang meminta layanan ke server.', 'Contoh: laptopmu saat membuka situs web.'],
+        ['Topologi', 'Bentuk susunan node dan link dalam sebuah jaringan.', 'Contoh: bentuk bintang (star) dengan satu switch di tengah.'],
+        ['Bandwidth', 'Seberapa banyak data yang bisa dikirim dalam satu waktu.', 'Makin besar, makin lancar.']
+        ];
+        function renderKamus(body) {
+            body.innerHTML = `<p class="lead">Istilah penting Sesi 1. Baca dulu sebelum mengerjakan misi atau LKPD.</p><div class="kamus">${KAMUS.map(k => `<div class="term"><b>${k[0]}</b><p>${k[1]}</p><small>${k[2]}</small></div>`).join('')}</div>`;
+        }
+
+        /* ---- Rapor ---- */
+        function openRapor() {
+            paused = true;
+            $('raporOv').hidden = false;
+            $('raporName').textContent = (S.name || 'Tamu') + (S.kelas ? ' · ' + S.kelas : '');
+            $('raporBody').innerHTML = `<table class="rapor"><tr><th>Misi</th><th>Status</th><th>Bintang</th></tr>${[1, 2, 3, 4].map(n => `<tr><td>${n}. ${esc(MISSIONS[n].title)}</td><td>${S.m[n].d ? 'Selesai' : unlocked(n) ? 'Belum' : 'Terkunci'}</td><td class="s">${starStr(S.m[n].s)}</td></tr>`).join('')}
+                <tr><th>Total</th><th>${totalStars() * 100} XP</th><th>${totalStars()} / 12 ⭐</th></tr></table>
+                <p class="lead" style="font-size:14px">${ONLINE ? (S.q.length ? '⏳ ' + S.q.length + ' catatan belum terkirim ke guru. Akan dikirim otomatis saat ada internet. ' : S.kodeBad ? '⚠ Kode kelas salah. Tekan Ganti nama dan tulis ulang kode dari guru. ' : S.namaBad ? '⚠ Namamu belum terdaftar. Tekan Ganti nama dan pilih namamu dari daftar. ' : '☁ Semua progres sudah terkirim ke guru. ') : ''}Nilai Sesi 1 tetap dari LKPD.</p>
+                <div class="row"><button class="btn ghost" type="button" id="rename">Ganti nama</button><button class="btn ghost" type="button" id="wipe">Hapus progres</button></div><div id="confirm"></div>`;
+            $('rename').onclick = () => {
+                closeRapor();
+                showStart();
+            };
+            $('wipe').onclick = () => {
+                $('confirm').innerHTML = `<div class="feedback bad"><span>Yakin menghapus semua bintang Sesi 1 di perangkat ini?</span><div class="row"><button class="btn dark" type="button" id="yes">Ya, hapus</button><button class="btn ghost" type="button" id="no">Batal</button></div></div>`;
+                $('yes').onclick = () => {
+                    const n = S.name,
+                        k = S.kelas, kd = S.kode, dv = S.dev, q = S.q, no = S.no;
+                    S = fresh();
+                    S.name = n;
+                    S.kelas = k; S.kode = kd; S.dev = dv; S.q = q; S.no = no;
+                    save();
+                    refreshHUD();
+                    closeRapor();
+                    toast('Progres Sesi 1 dihapus.');
+                };
+                $('no').onclick = () => $('confirm').innerHTML = '';
+            };
+            $('raporClose').focus({
+                preventScroll: true
+            });
+        }
+        function closeRapor() {
+            $('raporOv').hidden = true;
+            paused = false;
+        }
+        $('btnRapor').onclick = openRapor;
+        $('raporClose').onclick = closeRapor;
+
+        /* ---- Sinkron ke Google Sheet ---- */
+        function enqueue(item) {
+            if (!ONLINE) return;
+            item.id = S.dev + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+            S.q.push(item); if (S.q.length > 60) S.q = S.q.slice(-60);
+            save(); setTimeout(syncNow, 50);
+        }
+        let syncing = false;
+        async function syncNow() {
+            if (!ONLINE || syncing || !S.q.length || S.kodeBad || S.namaBad || !S.kode) return syncChip();
+            syncing = true; syncChip();
+            try {
+                while (S.q.length) {
+                    const payload = Object.assign({}, S.q[0], {sesi: SESI, kode: S.kode, nama: S.name, no: S.no || '', perangkat: S.dev});
+                    const r = await fetch(ENDPOINT, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+                    const j = await r.json();
+                    if (j && j.ok) { S.q.shift(); save(); }
+                    else if (j && j.error === 'nama') { S.namaBad = true; save(); toast('Namamu belum terdaftar di kelas ini. Buka Rapor Misi → Ganti nama, lalu pilih namamu dari daftar.', 5000); break; }
+                    else if (j && j.error === 'kode') { S.kodeBad = true; save(); toast('Kode kelas tidak dikenali server. Buka Rapor Misi → Ganti nama, lalu tulis kode dari guru.', 5000); break; }
+                    else { S.q.shift(); save(); }
+                }
+            } catch (e) {}
+            syncing = false; syncChip();
+        }
+        function syncChip() {
+            const c = $('hudSync'); if (!c) return;
+            if (!ONLINE) { c.hidden = true; return; }
+            c.hidden = false;
+            const n = S.q ? S.q.length : 0;
+            c.textContent = S.kodeBad ? '⚠ Kode kelas salah' : S.namaBad ? '⚠ Nama belum terdaftar' : syncing ? '☁ Mengirim…' : n ? ('⏳ ' + n + ' menunggu sinyal') : '☁ Tersimpan ke guru';
+        }
+        window.addEventListener('online', syncNow);
+        setInterval(() => { if (S.q && S.q.length) syncNow(); }, 30000);
+
+        /* ---- Start ---- */
+        let roster = null;
+        function showStart() {
+            paused = true;
+            $('startOv').hidden = false;
+            $('inName').value = S.name || '';
+            $('inKelas').value = (ONLINE ? S.kode : S.kelas) || '';
+            if (ONLINE) {
+                roster = null; $('pickWrap').hidden = true; $('nameField').hidden = true; $('btnStart').hidden = true; $('cekMsg').textContent = '';
+                if (S.kode) cekKelas(); else setTimeout(() => $('inKelas').focus(), 50);
+            } else setTimeout(() => $('inName').focus(), 50);
+        }
+        async function cekKelas() {
+            const kv = $('inKelas').value.trim().toUpperCase(); $('inKelas').value = kv;
+            if (!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)) { $('cekMsg').textContent = 'Tulis kode kelas dari guru, contoh: 8B-GN26.'; $('inKelas').focus(); return; }
+            $('cekMsg').textContent = 'Mencari kelas…'; $('btnCek').disabled = true;
+            try {
+                const r = await fetch(ENDPOINT + '?kode=' + encodeURIComponent(kv)); const j = await r.json();
+                if (!j.ok) { $('cekMsg').textContent = 'Kode kelas tidak dikenal. Tanyakan ke guru.'; roster = null; return; }
+                roster = {kode: kv, kelas: j.kelas, siswa: j.siswa || []};
+                if (roster.siswa.length) {
+                    const sel = $('inSiswa');
+                    sel.innerHTML = '<option value="">— pilih namamu —</option>' + roster.siswa.map((s, k) => `<option value="${k}">${s.no !== '' ? esc(s.no) + '. ' : ''}${esc(s.nama)}</option>`).join('');
+                    const prev = roster.siswa.findIndex(s => s.nama === S.name); if (prev >= 0) sel.value = String(prev);
+                    $('pickWrap').hidden = false; $('nameField').hidden = true; $('cekMsg').textContent = 'Kelas ' + j.kelas + ' ditemukan ✓ Pilih namamu.'; sel.focus();
+                } else {
+                    $('pickWrap').hidden = true; $('nameField').hidden = false; $('cekMsg').textContent = 'Kelas ' + j.kelas + ' ditemukan ✓ Daftar nama belum diisi guru, tulis nama panggilanmu.'; $('inName').focus();
+                }
+                $('btnStart').hidden = false;
+            } catch (e) { $('cekMsg').textContent = 'Tidak bisa terhubung ke server guru. Periksa internet, lalu tekan Cek kelas lagi.'; }
+            finally { $('btnCek').disabled = false; }
+        }
+        function begin(n) {
+            $('startOv').hidden = true; paused = false; refreshHUD();
+            toast('Halo ' + n + '! Mulai dari Ruang Kelas 8 yang berkedip.');
+            cv.focus({preventScroll: true});
+        }
+        $('btnStart').onclick = () => {
+            if (ONLINE) {
+                if (!roster || roster.kode !== $('inKelas').value.trim().toUpperCase()) { cekKelas(); return; }
+                let n = '', no = '';
+                if (roster.siswa.length) { const k = $('inSiswa').value; if (k === '') { toast('Pilih namamu dari daftar.'); $('inSiswa').focus(); return; } n = roster.siswa[+k].nama; no = roster.siswa[+k].no; }
+                else { n = $('inName').value.trim(); if (!n) { toast('Tulis nama panggilanmu dulu.'); $('inName').focus(); return; } }
+                S.name = n; S.no = no; S.kode = roster.kode; S.kelas = roster.kelas; S.kodeBad = false; S.namaBad = false; save(); syncNow(); begin(n); return;
+            }
+            const n = $('inName').value.trim();
+            if (!n) { $('inName').focus(); toast('Tulis nama panggilanmu dulu.'); return; }
+            S.name = n; S.kelas = $('inKelas').value.trim(); save(); begin(n);
+        };
+        $('btnCek').onclick = cekKelas;
+        $('inKelas').addEventListener('input', () => { if (ONLINE && roster) { roster = null; $('pickWrap').hidden = true; $('nameField').hidden = true; $('btnStart').hidden = true; $('cekMsg').textContent = ''; } });
+        $('inKelas').addEventListener('keydown', e => { if (e.key === 'Enter') { ONLINE ? cekKelas() : $('btnStart').click(); } });
+        $('inName').addEventListener('keydown', e => { if (e.key === 'Enter') { ONLINE ? $('btnStart').click() : $('inKelas').focus(); } });
+        $('inSiswa').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnStart').click(); });
+
+        refreshHUD();
+        if (ONLINE) {
+            $('lblKelas').textContent = 'Kode kelas dari guru'; $('inKelas').placeholder = 'contoh: 8B-GN26'; $('inKelas').maxLength = 17;
+            $('nameField').parentNode.insertBefore($('kelasField'), $('nameField')); $('cekRow').hidden = false;
+        }
+        if (!S.name || (ONLINE && !S.kode))
+            showStart();
+        else syncNow();
+    })();
+    </script>
+
+</body>
+</html>
