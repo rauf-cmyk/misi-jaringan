@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Papan Halaman Buku Tahunan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri&family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: papan kelas untuk Smart TV. Header + bilah kemajuan; kiri kotak semua siswa (2 halaman tiap siswa); kanan "Butuh bantuan", "Penolong hari ini", kabar terbaru; bawah ayat Al-Ma'idah 2. */
+:root{
+  --night:#0d1530; --panel:#18224a; --panel2:#212d5c; --line:#2d3a6e;
+  --cream:#f3ecd8; --muted:#a3acd0; --signal:#ffc93c; --ok:#3fd38a; --warn:#f0b23e; --none:#3a4573; --help:#ff8a5c;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif; --f-body:"Lexend","Segoe UI",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,#1f3a5a 0,transparent 60%),var(--night);color:var(--cream);font-family:var(--f-body);
+  padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  display:flex;flex-direction:column;gap:12px;font-size:clamp(13px,1.05vw,20px);overflow:auto}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+[hidden]{display:none!important}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--f-display);font-weight:800;font-size:2.1em;color:var(--signal)}
+.brand span{font-size:.8em;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.kelas{font-family:var(--f-display);font-weight:800;font-size:1.6em;background:var(--signal);color:#2a1d00;border-radius:14px;padding:2px 16px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 14px;display:flex;flex-direction:column;min-width:7.5em}
+.stat small{color:var(--muted);font-size:.72em;letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-family:var(--f-display);font-size:1.5em;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat.help b{color:var(--help)}
+.live{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--muted)}
+.live i{width:10px;height:10px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+.live.err i{background:#ff6b6b;animation:none}
+@keyframes pulse{50%{opacity:.35}}
+.tb{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 12px;font-size:.8em}
+.demo{background:#ff6b6b;color:#fff;font-weight:600;border-radius:8px;padding:3px 10px;font-size:.75em;letter-spacing:.06em}
+.progress{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.progress .big{font-family:var(--f-display);font-weight:800;font-size:2.2em;line-height:1;color:var(--signal);font-variant-numeric:tabular-nums}
+.progress .big small{font-size:.45em;color:var(--muted);margin-left:4px}
+.track{height:1.3em;border-radius:99px;background:#2c3658;overflow:hidden;display:flex}
+.track i{display:block;height:100%;transition:width .8s}
+.track .d{background:linear-gradient(90deg,#3fd38a,#7fe6ad)}.track .p{background:var(--warn);opacity:.75}
+.legend{display:flex;gap:14px;font-size:.8em;color:var(--muted);white-space:nowrap}
+.legend span::before{content:"";display:inline-block;width:.8em;height:.8em;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 16px;min-height:0;overflow:auto}
+.panel h2{font-family:var(--f-display);font-weight:800;font-size:1.1em;margin:0 0 8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.side{display:flex;flex-direction:column;gap:12px;min-height:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(9.5em,1fr));gap:8px}
+.tile{background:var(--panel2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;border:2px solid transparent;position:relative;min-width:0}
+.tile .nm{font-weight:600;font-size:.9em;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.4em}
+.tile .nm small{color:var(--muted);font-weight:400;margin-right:4px}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pg i{height:1.5em;border-radius:6px;background:var(--none);display:grid;place-items:center;font-style:normal;font-size:.7em;font-weight:600;color:#c9d0ea}
+.pg i.proses{background:var(--warn);color:#2a1d00}.pg i.selesai{background:var(--ok);color:#073a22}
+.tile.done{border-color:var(--ok)}
+.tile.helpme{border-color:var(--help);animation:wave 1.6s ease-in-out infinite}
+.tile.helpme::after{content:"🙋";position:absolute;top:-.6em;right:-.4em;font-size:1.3em}
+@keyframes wave{50%{box-shadow:0 0 0 4px rgba(255,138,92,.25)}}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.list li{background:var(--panel2);border-radius:10px;padding:6px 10px;font-size:.9em;line-height:1.35}
+.list li b{color:var(--signal)}
+.list .hl b{color:var(--help)}
+.list small{color:var(--muted)}
+.list .empty{background:none;color:var(--muted);padding:2px 0}
+.feed li{display:grid;grid-template-columns:3.2em minmax(0,1fr);gap:8px;background:none;padding:2px 0}
+.feed time{font-family:var(--f-mono);color:var(--muted);font-size:.85em}
+.flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%,30%{box-shadow:0 0 0 3px var(--signal);background:#3a3a1a}}
+.ayat{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 16px;text-align:center}
+.ayat .ar{font-family:"Amiri","Traditional Arabic",serif;font-size:1.6em;direction:rtl}
+.ayat span{color:var(--muted);font-size:.9em}
+#pop{position:fixed;left:50%;bottom:30%;transform:translateX(-50%);z-index:20;background:var(--signal);color:#2a1d00;border-radius:22px;padding:16px 28px;
+  font-family:var(--f-display);font-weight:800;font-size:1.9em;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);max-width:90vw;animation:popin .45s cubic-bezier(.2,1.6,.4,1)}
+#pop.help{background:var(--help)}#pop.ok{background:var(--ok);color:#073a22}
+#pop small{display:block;font-family:var(--f-body);font-weight:500;font-size:.5em}
+@keyframes popin{from{transform:translateX(-50%) scale(.6);opacity:0}}
+#final{position:fixed;inset:0;z-index:25;display:grid;place-items:center;background:rgba(8,12,30,.88);text-align:center;padding:16px}
+#final div{max-width:900px}
+#final h1{font-family:var(--f-display);font-size:3.2em;color:var(--signal);margin:0;line-height:1.05}
+#final p{font-size:1.2em;color:var(--cream)}
+#final .ar{font-family:"Amiri",serif;font-size:2.4em;margin:0}
+#setup{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,12,30,.85);z-index:30;padding:16px}
+#setup form{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;width:min(460px,100%)}
+#setup h1{font-family:var(--f-display);margin:0;color:var(--signal)}
+#setup input{font:inherit;font-size:1.1em;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--night);color:var(--cream);text-transform:uppercase}
+#setup .go{background:var(--signal);color:#2a1d00;border:0;border-radius:12px;padding:10px;font-weight:700;font-family:var(--f-display);font-size:1.2em}
+#setup p{margin:0;color:var(--muted);font-size:.9em}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.72em;color:var(--muted)}
+@media (max-width:900px){main{grid-template-columns:minmax(0,1fr)}.progress{grid-template-columns:minmax(0,1fr)}.stats{margin-left:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Papan Halaman Kelas</b><span>Buku Tahunan · Sesi 2</span></div>
+  <div class="kelas" id="kelas">—</div>
+  <span class="demo" id="demo" hidden>MODE CONTOH · DATA BUKAN SISWA ASLI</span>
+  <div class="stats">
+    <div class="stat"><small>Siswa tuntas</small><b id="sTuntas">0/0</b></div>
+    <div class="stat help"><small>Butuh bantuan</small><b id="sHelp">0</b></div>
+    <div class="stat"><small>Bantuan diberikan</small><b id="sBantu">0</b></div>
+  </div>
+  <div class="live" id="live"><i></i><span id="upd">Menghubungkan…</span></div>
+  <button class="tb" id="fs" type="button">Layar penuh</button>
+</header>
+<section class="progress">
+  <div class="big" id="pBig">0<small>/0 halaman siap</small></div>
+  <div class="track" aria-label="Kemajuan halaman kelas"><i class="d" id="tD" style="width:0"></i><i class="p" id="tP" style="width:0"></i></div>
+  <div class="legend"><span style="--c:var(--ok)">Selesai</span><span style="--c:var(--warn)">Sedang</span><span style="--c:var(--none)">Belum</span></div>
+</section>
+<main>
+  <section class="panel"><h2>Semua siswa · Halaman 1 & 2</h2><div class="grid" id="grid"></div></section>
+  <div class="side">
+    <section class="panel"><h2>🙋 Butuh bantuan</h2><ul class="list" id="helpList"></ul></section>
+    <section class="panel"><h2>🤝 Penolong hari ini</h2><ul class="list" id="bantuList"></ul></section>
+    <section class="panel" style="flex:1"><h2>Kabar terbaru</h2><ul class="list feed" id="feed"></ul></section>
+  </div>
+</main>
+<div class="ayat"><span class="ar" lang="ar">وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ</span><span>"Tolong-menolonglah kamu dalam kebajikan dan takwa." (QS Al-Ma'idah: 2) · Buku tahunan lengkap jika halaman semua teman siap.</span></div>
+<footer><span>Siswa melapor di halaman /halaman/. Tautan halaman untuk integrator ada di tab "Tautan Halaman" Google Sheet.</span><span>Created By Ai Prompted By Guru Belajar Digital (Rauf) · SMIT Gema Nurani</span></footer>
+<div id="pop" hidden></div>
+<div id="final" hidden><div><p class="ar" lang="ar">الْجَامِعُ</p><h1 id="finalT">Buku tahunan lengkap!</h1><p>Semua halaman siap. Allah Al-Jami', Yang Maha Mengumpulkan, menyatukan kerja kita menjadi satu karya. Terima kasih sudah saling membantu.</p><button class="tb" id="finalX" type="button">Tutup</button></div></div>
+<div id="setup" hidden>
+  <form id="setupForm">
+    <h1>Papan Halaman Kelas</h1>
+    <p>Masukkan kode kelas yang ingin ditayangkan. Simpan alamat halaman setelahnya sebagai bookmark untuk tiap kelas.</p>
+    <label for="inKode">Kode kelas</label><input id="inKode" placeholder="contoh: 9B-GN26" autocomplete="off" maxlength="17">
+    <button class="go" type="submit">Tayangkan</button>
+    <p id="setupMsg"></p>
+  </form>
+</div>
+<script>
+(function(){
+"use strict";
+/* ===== PENGATURAN GURU ===== */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+const SESI='Sesi 2 Buku Tahunan';
+const POLL=12000;
+/* =========================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const q=new URLSearchParams(location.search);
+const DEMO=!ENDPOINT||q.get('demo')==='1';
+let kode=(q.get('kode')||'').trim().toUpperCase(),seen=null,popQ=[],popping=false,timer=0,wasAll=null;
+const hhmm=t=>new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'});
+const fkey=f=>f.t+'|'+f.nama+'|'+f.jenis+'|'+f.hal+'|'+f.status;
+const LBL={belum:'Belum',proses:'Sedang',selesai:'Siap'};
+
+function render(d){
+  const S=d.siswa.slice().sort((a,b)=>(Number(a.no)||999)-(Number(b.no)||999)||a.nama.localeCompare(b.nama));
+  const n=S.length,total=n*2;
+  const done=S.reduce((a,s)=>a+(s.h[1]==='selesai')+(s.h[2]==='selesai'),0);
+  const proc=S.reduce((a,s)=>a+(s.h[1]==='proses')+(s.h[2]==='proses'),0);
+  const tuntas=S.filter(s=>s.h[1]==='selesai'&&s.h[2]==='selesai').length;
+  const helpers=S.filter(s=>s.help);
+  $('kelas').textContent=d.kelas;
+  $('sTuntas').textContent=tuntas+'/'+n;$('sHelp').textContent=helpers.length;$('sBantu').textContent=d.bantu.length;
+  $('pBig').innerHTML=done+'<small>/'+total+' halaman siap</small>';
+  $('tD').style.width=(total?done/total*100:0)+'%';$('tP').style.width=(total?proc/total*100:0)+'%';
+  $('grid').innerHTML=S.map(s=>{const all=s.h[1]==='selesai'&&s.h[2]==='selesai';
+    return `<div class="tile ${all?'done':''} ${s.help?'helpme':''}" data-n="${esc(s.nama)}" title="${esc(s.nama)}"><span class="nm">${s.no!==''&&s.no!=null?`<small>${esc(s.no)}.</small>`:''}${esc(s.nama)}</span><span class="pg"><i class="${esc(s.h[1])}">H1 · ${LBL[s.h[1]]||'Belum'}</i><i class="${esc(s.h[2])}">H2 · ${LBL[s.h[2]]||'Belum'}</i></span></div>`;}).join('');
+  $('helpList').innerHTML=helpers.map(s=>`<li class="hl"><b>${esc(s.nama)}</b><br><small>${esc(s.note||'butuh bantuan')}</small></li>`).join('')||'<li class="empty">Tidak ada yang sedang meminta bantuan. 👍</li>';
+  $('bantuList').innerHTML=d.bantu.slice(0,6).map(b=>`<li><b>${esc(b.dari)}</b> membantu <b>${esc(b.ke)}</b><br><small>${esc(b.apa)}</small></li>`).join('')||'<li class="empty">Belum ada. Siapa penolong pertama hari ini?</li>';
+  $('feed').innerHTML=d.feed.map(f=>`<li><time>${hhmm(f.t)}</time><span>${text(f)}</span></li>`).join('')||'<li class="empty"><time></time><span>Belum ada aktivitas.</span></li>';
+  const fresh=seen?d.feed.filter(f=>!seen.has(fkey(f))):[];
+  seen=seen||new Set();d.feed.forEach(f=>seen.add(fkey(f)));
+  fresh.reverse().forEach(f=>{if(f.jenis==='halaman'&&f.status!=='selesai')return;if(f.jenis==='bantuan'&&f.status!=='minta')return;popQ.push(f);
+    document.querySelectorAll(`[data-n="${CSS.escape(f.nama)}"]`).forEach(el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});});
+  nextPop();
+  const all=n>0&&tuntas===n;
+  if(all&&wasAll===false){$('finalT').textContent='Buku tahunan '+d.kelas+' lengkap!';$('final').hidden=false;}
+  wasAll=all;
+}
+function text(f){
+  if(f.jenis==='halaman')return `<b>${esc(f.nama)}</b> ${f.status==='selesai'?'menyelesaikan':f.status==='proses'?'sedang mengerjakan':'menandai belum'} Halaman ${esc(f.hal)}`;
+  if(f.jenis==='bantuan')return f.status==='minta'?`<b>${esc(f.nama)}</b> meminta bantuan: ${esc(f.apa)}`:`<b>${esc(f.nama)}</b> sudah teratasi ✓`;
+  return `🤝 <b>${esc(f.nama)}</b> membantu <b>${esc(f.status)}</b>`;
+}
+function nextPop(){
+  if(popping||!popQ.length)return;popping=true;const f=popQ.shift(),p=$('pop');
+  p.className=f.jenis==='bantuan'?'help':f.jenis==='bantu'?'ok':'';
+  p.innerHTML=f.jenis==='halaman'?`🟩 ${esc(f.nama)}<small>Halaman ${esc(f.hal)} siap masuk buku tahunan!</small>`:
+    f.jenis==='bantuan'?`🙋 ${esc(f.nama)} butuh bantuan<small>${esc(f.apa)} · siapa yang bisa membantu?</small>`:
+    `🤝 ${esc(f.nama)} membantu ${esc(f.status)}<small>${esc(f.apa)}</small>`;
+  p.hidden=false;p.style.animation='none';void p.offsetWidth;p.style.animation='';
+  setTimeout(()=>{p.hidden=true;popping=false;nextPop();},popQ.length>2?1800:3800);
+}
+async function load(){
+  clearTimeout(timer);
+  try{
+    const d=DEMO?demo():await (await fetch(ENDPOINT+'?papan=halaman&kode='+encodeURIComponent(kode)+'&sesi='+encodeURIComponent(SESI))).json();
+    if(!d.ok){$('live').classList.add('err');$('upd').textContent=d.error==='kode'?'Kode kelas tidak dikenal':'Server menolak: '+(d.error||'?');if(d.error==='kode')ask('Kode kelas tidak dikenal. Periksa KODE_KELAS di Apps Script.');return;}
+    if(!Array.isArray(d.bantu)){$('live').classList.add('err');$('upd').textContent='Server belum diperbarui (buat Versi baru di Apps Script)';return;}
+    render(d);$('live').classList.remove('err');$('upd').textContent='Live · diperbarui '+new Date().toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta'});
+  }catch(e){$('live').classList.add('err');$('upd').textContent='Koneksi terputus, mencoba lagi…';}
+  timer=setTimeout(load,DEMO?5000:POLL);
+}
+function ask(m){$('setup').hidden=false;$('setupMsg').textContent=m||'';$('inKode').value=kode;setTimeout(()=>$('inKode').focus(),50);}
+$('setupForm').onsubmit=e=>{e.preventDefault();const v=$('inKode').value.trim().toUpperCase();if(!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(v)){$('setupMsg').textContent='Format kode: 9B-GN26';return;}
+  kode=v;try{const u=new URL(location.href);u.searchParams.set('kode',v);history.replaceState(null,'',u);}catch(x){}$('setup').hidden=true;seen=null;wasAll=null;load();};
+$('finalX').onclick=()=>{$('final').hidden=true;};
+$('fs').onclick=()=>{try{const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(()=>{});}catch(e){}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});
+
+/* ---- Mode contoh: data rekaan ---- */
+let D=null;
+function demo(){
+  const now=Date.now();
+  if(!D){const names=['Contoh Adi','Contoh Bunga','Contoh Cahya','Contoh Dimas','Contoh Elsa','Contoh Farhan','Contoh Gita','Contoh Hana','Contoh Ilham','Contoh Jihan','Contoh Kevin','Contoh Laila','Contoh Malik','Contoh Nadia','Contoh Oki','Contoh Putri','Contoh Raka','Contoh Sinta','Contoh Tegar','Contoh Umar'];
+    const st=['selesai','selesai','proses','belum'];
+    D={siswa:names.map((n,k)=>({nama:n,no:k+1,h:{1:st[k%4],2:st[(k+1)%4]==='selesai'&&k%3?'proses':st[(k+2)%4]},help:k===6||k===13,note:k===6?'foto selalu pindah posisi':'cara berbagi dokumen ke integrator',t:null})),bantu:[{t:now-300000,dari:'Contoh Adi',ke:'Contoh Hana',apa:'mengajari wrap text pada foto'}],feed:[]};}
+  const s=D.siswa[Math.floor(Math.random()*D.siswa.length)],r=Math.random();
+  if(r<.55){const h=s.h[1]!=='selesai'?1:s.h[2]!=='selesai'?2:0;if(h){s.h[h]=s.h[h]==='belum'?'proses':'selesai';D.feed.unshift({t:now,nama:s.nama,jenis:'halaman',hal:h,status:s.h[h],apa:''});}}
+  else if(r<.75&&!s.help&&s.h[2]!=='selesai'){s.help=true;s.note='bingung mengatur margin';D.feed.unshift({t:now,nama:s.nama,jenis:'bantuan',hal:'',status:'minta',apa:s.note});}
+  else{const h=D.siswa.find(x=>x.help);if(h){const dari=D.siswa.find(x=>x.h[1]==='selesai'&&x.h[2]==='selesai'&&x!==h)||s;h.help=false;D.bantu.unshift({t:now,dari:dari.nama,ke:h.nama,apa:'membantu '+h.note});D.feed.unshift({t:now,nama:dari.nama,jenis:'bantu',hal:'',status:h.nama,apa:'membantu '+h.note});}}
+  D.feed=D.feed.slice(0,8);
+  return {ok:true,kelas:'9B',siswa:JSON.parse(JSON.stringify(D.siswa)),bantu:D.bantu.slice(0,12),feed:D.feed};
+}
+if(DEMO){$('demo').hidden=false;load();}else if(!kode)ask();else load();
+})();
+</script>
+</body>
+</html>

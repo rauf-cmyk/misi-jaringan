@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Halaman Buku Tahunan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri&family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: satu kolom kartu krem di atas latar malam (seri Misi Jaringan). Atas: identitas; tengah: dua kartu halaman; bawah: minta bantuan & membantu teman. */
+:root{
+  --night:#0d1530; --ink:#1b2440; --ink2:#55607e; --paper:#fbf6ea; --paper2:#f3ead3; --line:#e3d6b4;
+  --signal:#ffc93c; --ok:#25a866; --okbg:#dcf5e6; --warn:#e0a400; --warnbg:#fff1c9; --bad:#e5484d; --badbg:#fde3e3;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif; --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;min-height:100vh;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.hud{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;color:var(--paper)}
+.hud b{font-family:var(--f-display);font-weight:800;font-size:24px;color:var(--signal);line-height:1}
+.hud span.sub{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a3acd0}
+.chip{background:#18224a;border:1px solid #2d3a6e;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--paper)}
+.hud .sp{flex:1}
+.card{background:var(--paper);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 0 #070c1f}
+.card h2{font-family:var(--f-display);font-weight:800;font-size:22px;margin:0;line-height:1.1}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin:0}
+.lead{margin:0;color:var(--ink2)}
+label{font-weight:600;font-size:14px;color:var(--ink2)}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:2px solid var(--ink);background:#fff}
+textarea{min-height:60px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:3px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:12px;padding:9px 16px;font-weight:600;box-shadow:0 3px 0 #070c1f}
+.btn.ghost{background:#fff;color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.status{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.status button{border:3px solid var(--line);background:#fff;border-radius:12px;padding:10px 6px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px}
+.status button i{font-style:normal;font-size:22px;line-height:1}
+.status button[aria-pressed="true"][data-s="belum"]{border-color:var(--ink2);background:var(--paper2)}
+.status button[aria-pressed="true"][data-s="proses"]{border-color:var(--warn);background:var(--warnbg)}
+.status button[aria-pressed="true"][data-s="selesai"]{border-color:var(--ok);background:var(--okbg)}
+.pages{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:620px){.pages{grid-template-columns:1fr}}
+.help.on{background:#fff1c9;border:3px solid var(--warn)}
+.note{background:#fff;border:2px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:14px}
+.ayat{font-family:"Amiri","Traditional Arabic",serif;font-size:26px;direction:rtl;text-align:right;line-height:1.7}
+.msg{font-size:14px;color:var(--ink2)}
+.toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);border:2px solid var(--signal);border-radius:12px;padding:10px 16px;font-size:14px;z-index:9;max-width:calc(100vw - 32px)}
+footer{color:#a3acd0;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hud">
+    <div><b>Buku Tahunan</b><span class="sub">Kelas IX · Sesi 2 · Papan Halaman</span></div>
+    <span class="sp"></span>
+    <span class="chip" id="hudName">Belum masuk</span>
+    <span class="chip" id="hudSync" hidden></span>
+  </header>
+
+  <section class="card" id="login">
+    <p class="eyebrow">Masuk</p>
+    <h2>Laporkan halamanmu</h2>
+    <p class="lead">Setiap siswa membuat 2 halaman buku tahunan. Tandai kemajuanmu di sini supaya integrator dan seluruh kelas tahu halaman siapa yang sudah siap, dan siapa yang perlu dibantu.</p>
+    <label for="inKode">Kode kelas dari guru</label>
+    <input id="inKode" maxlength="17" autocomplete="off" placeholder="contoh: 9B-GN26">
+    <div class="row"><button class="btn ghost" id="btnCek" type="button">Cek kelas</button><span class="msg" id="cekMsg"></span></div>
+    <div id="pickWrap" hidden><label for="inSiswa">Pilih namamu</label><select id="inSiswa"></select></div>
+    <div class="row"><button class="btn" id="btnMasuk" type="button" hidden>Masuk</button></div>
+  </section>
+
+  <div id="main" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="pages">
+      <section class="card" data-h="1">
+        <p class="eyebrow">Halaman 1</p><h2>Foto, nama & kesan</h2>
+        <div class="status">
+          <button type="button" data-s="belum"><i>⬜</i>Belum</button>
+          <button type="button" data-s="proses"><i>🟨</i>Sedang</button>
+          <button type="button" data-s="selesai"><i>🟩</i>Selesai</button>
+        </div>
+        <label for="link1">Tautan halaman (opsional, untuk integrator)</label>
+        <input id="link1" type="url" inputmode="url" placeholder="https://docs.google.com/…">
+      </section>
+      <section class="card" data-h="2">
+        <p class="eyebrow">Halaman 2</p><h2>Momen favorit</h2>
+        <div class="status">
+          <button type="button" data-s="belum"><i>⬜</i>Belum</button>
+          <button type="button" data-s="proses"><i>🟨</i>Sedang</button>
+          <button type="button" data-s="selesai"><i>🟩</i>Selesai</button>
+        </div>
+        <label for="link2">Tautan halaman (opsional, untuk integrator)</label>
+        <input id="link2" type="url" inputmode="url" placeholder="https://docs.google.com/…">
+      </section>
+    </div>
+
+    <section class="card help" id="helpCard">
+      <p class="eyebrow">Butuh bantuan?</p>
+      <h2 id="helpTitle">🙋 Angkat tangan digital</h2>
+      <p class="lead" id="helpLead">Kesulitan mengatur tata letak, menyisipkan gambar, atau memakai fitur kolaborasi? Minta bantuan. Namamu akan tampil di papan supaya teman yang bisa langsung datang membantu.</p>
+      <label for="helpNote">Bantuan apa yang kamu perlukan? (singkat)</label>
+      <input id="helpNote" maxlength="80" placeholder="contoh: foto selalu pindah posisi">
+      <div class="row"><button class="btn" id="btnHelp" type="button">🙋 Minta bantuan</button></div>
+    </section>
+
+    <section class="card">
+      <p class="eyebrow">Peduli teman</p>
+      <h2>🤝 Saya sudah membantu teman</h2>
+      <p class="lead">Catat setelah kamu benar-benar membantu. Bantuanmu akan tampil di papan sebagai "Penolong hari ini".</p>
+      <label for="inTeman">Teman yang kamu bantu</label>
+      <select id="inTeman"></select>
+      <label for="inApa">Bantuan yang kamu berikan</label>
+      <input id="inApa" maxlength="80" placeholder="contoh: mengajari wrap text pada foto">
+      <div class="row"><button class="btn" id="btnBantu" type="button">Catat bantuan</button></div>
+    </section>
+
+    <section class="card">
+      <p class="eyebrow">QS Al-Ma'idah: 2</p>
+      <div class="ayat" lang="ar">وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ</div>
+      <p class="lead">"…dan tolong-menolonglah kamu dalam kebajikan dan takwa." Buku tahunan baru lengkap jika halaman semua teman siap.</p>
+      <div class="row"><button class="btn ghost" id="btnKeluar" type="button">Ganti nama</button></div>
+    </section>
+  </div>
+  <footer>Informatika Kelas IX · SMIT Gema Nurani · Created By Ai Prompted By Guru Belajar Digital (Rauf)</footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script>
+(function(){
+"use strict";
+/* ===== PENGATURAN GURU ===== */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+const SESI='Sesi 2 Buku Tahunan';
+/* =========================== */
+const KEY='bukuTahunan9.sesi2.v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S=null;try{S=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+if(!S)S={};S.h=S.h||{1:'belum',2:'belum'};S.link=S.link||{1:'',2:''};S.q=Array.isArray(S.q)?S.q:[];
+if(!S.dev)S.dev='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+let tt=0;function toast(m,ms){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,ms||2600);}
+let roster=null;
+
+/* ---------- kirim ke Sheet (antrean offline) ---------- */
+function enqueue(it){
+  it.id=S.dev+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+  S.q.push(it);if(S.q.length>60)S.q=S.q.slice(-60);save();setTimeout(sync,50);
+}
+let busy=false;
+async function sync(){
+  if(!ENDPOINT||busy||!S.q.length||!S.kode||S.bad)return chip();
+  busy=true;chip();
+  try{
+    while(S.q.length){
+      const p=Object.assign({},S.q[0],{sesi:SESI,kode:S.kode,nama:S.nama,perangkat:S.dev});
+      const j=await (await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)})).json();
+      if(j&&j.ok){S.q.shift();save();}
+      else if(j&&(j.error==='kode'||j.error==='nama')&&S.q[0].jenis!=='bantu'){S.bad=true;save();toast('Nama atau kode kelas tidak dikenali server. Tekan "Ganti nama".',5000);break;}
+      else{S.q.shift();save();if(j&&j.error)toast('Satu catatan ditolak server ('+j.error+').');}
+    }
+  }catch(e){}
+  busy=false;chip();
+}
+function chip(){
+  const c=$('hudSync');if(!ENDPOINT){c.hidden=false;c.textContent='Mode latihan (tidak terkirim)';return;}
+  if(!S.nama){c.hidden=true;return;}c.hidden=false;
+  c.textContent=S.bad?'⚠ Ganti nama':busy?'☁ Mengirim…':S.q.length?'⏳ '+S.q.length+' menunggu sinyal':'☁ Tersimpan ke guru';
+}
+window.addEventListener('online',sync);setInterval(()=>{if(S.q.length)sync();},30000);
+
+/* ---------- masuk ---------- */
+async function cek(){
+  const kv=$('inKode').value.trim().toUpperCase();$('inKode').value=kv;
+  if(!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)){$('cekMsg').textContent='Tulis kode kelas dari guru, contoh: 9B-GN26.';return;}
+  if(!ENDPOINT){roster={kode:kv,kelas:kv.split('-')[0],siswa:[{no:1,nama:'Contoh Siswa A'},{no:2,nama:'Contoh Siswa B'}]};fill();return;}
+  $('cekMsg').textContent='Mencari kelas…';$('btnCek').disabled=true;
+  try{const j=await (await fetch(ENDPOINT+'?kode='+encodeURIComponent(kv))).json();
+    if(!j.ok){$('cekMsg').textContent='Kode kelas tidak dikenal. Tanyakan ke guru.';return;}
+    if(!j.siswa||!j.siswa.length){$('cekMsg').textContent='Daftar nama kelas '+j.kelas+' belum diisi guru.';return;}
+    roster={kode:kv,kelas:j.kelas,siswa:j.siswa};fill();
+  }catch(e){$('cekMsg').textContent='Tidak bisa terhubung. Periksa internet, lalu tekan Cek kelas lagi.';}
+  finally{$('btnCek').disabled=false;}
+}
+function fill(){
+  const sel=$('inSiswa');sel.innerHTML='<option value="">— pilih namamu —</option>'+roster.siswa.map((s,k)=>`<option value="${k}">${s.no!==''?esc(s.no)+'. ':''}${esc(s.nama)}</option>`).join('');
+  const prev=roster.siswa.findIndex(s=>s.nama===S.nama);if(prev>=0)sel.value=String(prev);
+  $('pickWrap').hidden=false;$('btnMasuk').hidden=false;$('cekMsg').textContent='Kelas '+roster.kelas+' ditemukan ✓';sel.focus();
+}
+$('btnCek').onclick=cek;
+$('inKode').addEventListener('keydown',e=>{if(e.key==='Enter')cek();});
+$('inKode').addEventListener('input',()=>{roster=null;$('pickWrap').hidden=true;$('btnMasuk').hidden=true;$('cekMsg').textContent='';});
+$('btnMasuk').onclick=()=>{
+  const k=$('inSiswa').value;if(k===''){toast('Pilih namamu dari daftar.');return;}
+  const s=roster.siswa[+k];
+  if(S.nama&&S.nama!==s.nama){S.h={1:'belum',2:'belum'};S.link={1:'',2:''};S.help=false;S.q=[];}
+  S.nama=s.nama;S.kode=roster.kode;S.kelas=roster.kelas;S.bad=false;save();show();sync();
+};
+$('btnKeluar').onclick=()=>{$('main').hidden=true;$('login').hidden=false;$('inKode').value=S.kode||'';if(S.kode)cek();};
+
+/* ---------- halaman ---------- */
+function show(){
+  $('login').hidden=true;$('main').hidden=false;
+  $('hudName').textContent=S.nama+' · '+S.kelas;
+  document.querySelectorAll('[data-h]').forEach(c=>{const h=c.dataset.h;c.querySelectorAll('[data-s]').forEach(b=>b.setAttribute('aria-pressed',S.h[h]===b.dataset.s));$('link'+h).value=S.link[h]||'';});
+  const help=!!S.help;$('helpCard').classList.toggle('on',help);
+  $('helpTitle').textContent=help?'🙋 Kamu sedang meminta bantuan':'🙋 Angkat tangan digital';
+  $('helpLead').textContent=help?'Namamu tampil di papan kelas. Setelah masalahmu teratasi, tekan "Sudah teratasi".':'Kesulitan mengatur tata letak, menyisipkan gambar, atau memakai fitur kolaborasi? Minta bantuan. Namamu akan tampil di papan supaya teman yang bisa langsung datang membantu.';
+  $('btnHelp').textContent=help?'✓ Sudah teratasi':'🙋 Minta bantuan';$('helpNote').disabled=help;$('helpNote').value=help?(S.helpNote||''):'';
+  const others=(roster?roster.siswa:[]).filter(s=>s.nama!==S.nama);
+  $('inTeman').innerHTML='<option value="">— pilih teman —</option>'+others.map(s=>`<option>${esc(s.nama)}</option>`).join('');
+  chip();
+}
+function sendPage(h){
+  const raw=$('link'+h).value.trim(),link=/^https:\/\/\S+$/.test(raw)?raw:'';
+  if(raw&&!link){toast('Tautan harus diawali https://');}
+  S.link[h]=link;enqueue({jenis:'halaman',misi:+h,judul:S.h[h],aksi:link});save();
+}
+document.querySelectorAll('[data-h]').forEach(c=>{
+  const h=c.dataset.h;
+  c.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
+    if(S.h[h]===b.dataset.s)return;S.h[h]=b.dataset.s;sendPage(h);show();
+    if(b.dataset.s==='selesai'){toast(S.h[1]==='selesai'&&S.h[2]==='selesai'?'🎉 Kedua halamanmu siap! Yuk bantu teman yang masih berjuang.':'Halaman '+h+' selesai, tercatat di papan kelas!',3500);
+      if(S.h[1]==='selesai'&&S.h[2]==='selesai'&&S.help){S.help=false;enqueue({jenis:'bantuan',judul:'selesai'});show();}}
+  });
+  $('link'+h).addEventListener('change',()=>{if(($('link'+h).value.trim())!==(S.link[h]||''))sendPage(h);});
+});
+$('btnHelp').onclick=()=>{
+  if(S.help){S.help=false;enqueue({jenis:'bantuan',judul:'selesai'});toast('Alhamdulillah, sudah teratasi. Jangan lupa berterima kasih pada temanmu.');}
+  else{const n=$('helpNote').value.trim();if(!n){toast('Tulis singkat bantuan apa yang kamu perlukan.');$('helpNote').focus();return;}
+    S.help=true;S.helpNote=n;enqueue({jenis:'bantuan',judul:'minta',alasan:n});toast('Namamu tampil di papan. Teman atau guru akan datang membantu.',3500);}
+  save();show();
+};
+$('btnBantu').onclick=()=>{
+  const t=$('inTeman').value,a=$('inApa').value.trim();
+  if(!t){toast('Pilih teman yang kamu bantu.');return;}if(!a){toast('Tulis singkat bantuan yang kamu berikan.');$('inApa').focus();return;}
+  enqueue({jenis:'bantu',judul:t,alasan:a});$('inTeman').value='';$('inApa').value='';
+  toast('🤝 Terima kasih sudah membantu '+t+'! Tercatat di papan kelas.',3500);
+};
+
+/* ---------- mulai ---------- */
+chip();
+if(S.nama&&S.kode){
+  $('inKode').value=S.kode;
+  (async()=>{try{if(ENDPOINT){const j=await (await fetch(ENDPOINT+'?kode='+encodeURIComponent(S.kode))).json();if(j.ok)roster={kode:S.kode,kelas:j.kelas,siswa:j.siswa||[]};}}catch(e){}
+    show();sync();})();
+}
+})();
+</script>
+</body>
+</html>
