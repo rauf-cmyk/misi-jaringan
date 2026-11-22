@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Studio Aset Visual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri&family=Baloo+2:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: satu kolom lebar baca; header + kartu tim; lalu tab 5 aktivitas mengikuti LKPD (Rencana, Produksi, Cek Mutu, Gallery Walk, Refleksi). Tema terang supaya terbaca saat di-mirror ke TV. */
+:root{
+  --bg:#eef3f1; --card:#ffffff; --ink:#152238; --muted:#56637a; --line:#d8e0e6; --soft:#f4f7f8;
+  --teal:#0f766e; --teal-soft:#d9f0ec; --amber:#b26b00; --amber-soft:#fff1d6; --ok:#1d8a4f; --ok-soft:#ddf3e5;
+  --bad:#c0392b; --bad-soft:#fde4e1; --help:#d9480f;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif; --f-body:"Lexend","Segoe UI",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;min-height:100vh;
+  padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 90px max(16px,env(safe-area-inset-left))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.brand b{display:block;font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1;color:var(--teal)}
+.brand span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sp{flex:1}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-family:var(--f-display);font-weight:800;font-size:22px;margin:0;line-height:1.15;text-wrap:balance}
+.card h3{font-size:17px;margin:0}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
+.lead{margin:0;color:var(--muted)}
+label{font-weight:600;font-size:14px;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:#fff}
+input:focus,select:focus,textarea:focus{border-color:var(--teal)}
+textarea{min-height:76px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+.btn{border:2px solid var(--teal);background:var(--teal);color:#fff;border-radius:10px;padding:9px 16px;font-weight:600}
+.btn.ghost{background:#fff;color:var(--teal)}
+.btn:disabled{opacity:.5;cursor:default}
+.pick{border:2px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.pick b{font-size:15px}.pick small{color:var(--muted);font-size:13px;line-height:1.35}
+.pick[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:6px 0}
+.tabs button{border:2px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;display:flex;gap:6px;align-items:center}
+.tabs button[aria-selected="true"]{border-color:var(--teal);background:var(--teal);color:#fff}
+.tabs i{font-style:normal;font-size:12px;font-weight:500;opacity:.8}
+.mates{display:flex;gap:6px;flex-wrap:wrap}
+.mates span{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+.note{background:var(--soft);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--muted)}
+.warn{background:var(--amber-soft);border:1px solid #f0cf8f;border-radius:12px;padding:10px 12px;font-size:14px}
+.okbox{background:var(--ok-soft);border:1px solid #a9dcbd;border-radius:12px;padding:10px 12px;font-size:14px}
+.prompt{font-family:var(--f-mono);font-size:14px;background:#0f2a2a0d;border:2px solid var(--teal-soft);border-radius:12px;padding:12px;white-space:pre-wrap;word-break:break-word;min-height:56px}
+.sug{display:flex;gap:6px;flex-wrap:wrap}
+.sug button{border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:3px 10px;font-size:13px}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+@media (max-width:640px){.checks{grid-template-columns:1fr}}
+.checks label{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);margin:0;font-size:14px;background:var(--soft);border-radius:10px;padding:8px 10px;cursor:pointer}
+.checks input{width:auto;margin-top:3px}
+.ver{border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ver.done{border-color:#a9dcbd;background:#fbfffc}
+.badge{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--soft);border:1px solid var(--line);color:var(--muted)}
+.badge.ok{background:var(--ok-soft);border-color:#a9dcbd;color:var(--ok)}
+.badge.am{background:var(--amber-soft);border-color:#f0cf8f;color:var(--amber)}
+.tablewrap{overflow-x:auto}
+table.cek{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+table.cek th,table.cek td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center}
+table.cek th:first-child,table.cek td:first-child{text-align:left}
+table.cek input{width:22px;height:22px}
+.fb{background:var(--soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.fb b{color:var(--teal)}
+#helpBtn{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;padding:12px 18px;font-weight:700;background:var(--help);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+#helpBtn.on{background:var(--ok)}
+dialog{border:0;border-radius:16px;padding:0;max-width:min(460px,calc(100vw - 32px));width:100%}
+dialog::backdrop{background:rgba(21,34,56,.45)}
+dialog .card{border:0}
+.toast{position:fixed;left:50%;bottom:max(80px,calc(env(safe-area-inset-bottom) + 70px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;z-index:9;max-width:calc(100vw - 32px)}
+footer{color:var(--muted);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><b>Studio Aset Visual</b><span>Digital Learning · Kelas VIII · Sesi 3</span></div>
+    <span class="sp"></span>
+    <span class="chip" id="hudName">Belum masuk</span>
+    <span class="chip" id="hudSync" hidden></span>
+  </header>
+
+  <section class="card" id="login">
+    <p class="eyebrow">Masuk</p>
+    <h2>Proyek "Paket Aset Visual Presentasi"</h2>
+    <p class="lead">Catat kemajuan tim di sini: rencana, prompt dan revisinya, cek mutu, sampai file final. Guru dan kelas melihat kemajuan tim di papan proyek.</p>
+    <div><label for="inKode">Kode kelas dari guru</label><input id="inKode" maxlength="17" autocomplete="off" placeholder="contoh: 8A-GN26"></div>
+    <div class="row"><button class="btn ghost" id="btnCek" type="button">Cek kelas</button><span id="cekMsg" style="font-size:14px;color:var(--muted)"></span></div>
+    <div id="pickWrap" hidden><label for="inSiswa">Pilih namamu</label><select id="inSiswa"></select></div>
+    <div class="row"><button class="btn" id="btnMasuk" type="button" hidden>Masuk</button></div>
+  </section>
+
+  <div id="app" hidden style="display:flex;flex-direction:column;gap:14px">
+    <section class="card" id="timCard">
+      <div class="row" style="justify-content:space-between"><div><p class="eyebrow">Timku</p><h2 id="timTitle">Pilih tim dan peranmu</h2></div><button class="btn ghost" id="btnGanti" type="button">Ganti nama</button></div>
+      <div class="mates" id="mates"></div>
+      <div id="timForm" style="display:flex;flex-direction:column;gap:12px">
+        <div class="grid2">
+          <div><label for="inTim">Nomor tim</label><select id="inTim"></select></div>
+          <div><label for="inAset">Aset tanggung jawabku</label><select id="inAset"><option value="sampul">Sampul</option><option value="isi">Isi</option><option value="penutup">Penutup</option></select></div>
+        </div>
+        <div><label>Peranku</label><div class="grid3" id="peranPick">
+          <button type="button" class="pick" data-p="art"><b>🎨 Art Director</b><small>Menjaga kunci gaya dan memimpin rencana.</small></button>
+          <button type="button" class="pick" data-p="prompt"><b>✍️ Prompt Writer</b><small>Merapikan formula prompt tim.</small></button>
+          <button type="button" class="pick" data-p="qc"><b>🔍 Quality Checker</b><small>Memimpin cek mutu dan etika.</small></button>
+        </div></div>
+        <div class="row"><button class="btn" id="btnTim" type="button">Simpan tim</button><span class="lead" style="font-size:13px">Setiap anggota tetap membuat 1 aset sendiri.</span></div>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist" aria-label="Aktivitas proyek">
+      <button role="tab" data-tab="rencana" aria-selected="true">1 Rencana <i>10′</i></button>
+      <button role="tab" data-tab="produksi">2 Produksi <i>20′</i></button>
+      <button role="tab" data-tab="cek">3 Cek Mutu <i>10′</i></button>
+      <button role="tab" data-tab="galeri">4 Gallery Walk</button>
+      <button role="tab" data-tab="refleksi">5 Refleksi</button>
+    </nav>
+
+    <!-- 1 Rencana -->
+    <section class="card" data-panel="rencana">
+      <p class="eyebrow">Aktivitas 1 · Rencana Proyek</p>
+      <h2>Pilih tema yang benar-benar dibutuhkan kelas atau sekolah</h2>
+      <div><label for="inTema">Tema presentasi</label>
+        <select id="inTema"><option value="">— pilih tema —</option><option>Profil Kelas 8</option><option>Program Kebersihan/Adiwiyata</option><option>Peringatan Maulid Nabi</option><option>Materi IPA: Siklus Air</option><option>Market Day</option><option>Hari Guru</option><option value="__lain">Lainnya…</option></select>
+        <input id="inTemaLain" maxlength="120" placeholder="tulis tema lain" style="margin-top:6px" hidden></div>
+      <div><label for="inTujuan">Tujuan presentasi (pesan utama)</label><textarea id="inTujuan" maxlength="300" placeholder="contoh: mengajak warga sekolah memilah sampah organik dan anorganik"></textarea></div>
+      <div><label for="inAudiens">Audiens (siapa yang menonton?)</label><input id="inAudiens" maxlength="200" placeholder="contoh: siswa SMP dan orang tua saat Market Day"></div>
+      <div><label for="inGaya">Kunci gaya tim (gaya + pencahayaan + warna)</label><input id="inGaya" maxlength="200" placeholder="contoh: flat illustration, warna hijau tosca dan krem pastel, cahaya pagi lembut">
+        <div class="sug" style="margin-top:6px" id="sugGaya"></div></div>
+      <div class="row"><button class="btn" id="btnRencana" type="button">Simpan rencana tim</button><span class="lead" id="rencanaInfo" style="font-size:13px"></span></div>
+    </section>
+
+    <!-- 2 Produksi -->
+    <section class="card" data-panel="produksi" hidden>
+      <p class="eyebrow">Aktivitas 2 · Produksi & Iterasi Prompt</p>
+      <h2>Rakit prompt: Subjek + Gaya + Pencahayaan</h2>
+      <div class="grid2">
+        <div><label for="inAsetP">Aset yang dikerjakan</label><select id="inAsetP"><option value="sampul">Sampul</option><option value="isi">Isi</option><option value="penutup">Penutup</option></select></div>
+        <div><label>Kunci gaya tim (otomatis ditempel)</label><div class="note" id="gayaShow">Isi dulu kunci gaya di Aktivitas 1.</div></div>
+      </div>
+      <div><label for="inSubjek">Subjek (apa/siapa + aktivitas + latar)</label><textarea id="inSubjek" maxlength="300" placeholder="contoh: tiga siswa SMP berseragam memilah sampah ke tempat sampah warna-warni di taman sekolah"></textarea></div>
+      <div><label>Prompt lengkap</label><div class="prompt" id="promptOut">…</div></div>
+      <div class="warn" id="etikaWarn" hidden></div>
+      <div class="row">
+        <button class="btn" id="btnSalin" type="button">Salin prompt</button>
+        <a class="btn ghost" href="https://www.canva.com/" target="_blank" rel="noopener" style="text-decoration:none">Buka Canva</a>
+        <a class="btn ghost" href="https://gemini.google.com/" target="_blank" rel="noopener" style="text-decoration:none">Buka Gemini</a>
+        <a class="btn ghost" href="https://www.bing.com/images/create" target="_blank" rel="noopener" style="text-decoration:none">Buka Bing</a>
+      </div>
+      <div class="note">Jangan meminta AI menggambar karakter kartun/film, merek terkenal, atau wajah teman/guru. Judul slide diketik manual, bukan dari AI.</div>
+
+      <div class="ver" id="v1box">
+        <div class="row" style="justify-content:space-between"><h3>Prompt v1</h3><span class="badge" id="v1badge">belum dikirim</span></div>
+        <textarea id="inV1" maxlength="600" placeholder="Tekan 'Pakai prompt di atas' atau tulis promptmu"></textarea>
+        <div class="row"><button class="btn ghost" id="btnPakai" type="button">Pakai prompt di atas</button></div>
+        <div><label>Evaluasi hasil v1</label><div class="checks" id="evalChecks">
+          <label><input type="checkbox" data-e="0"> Subjek sesuai</label>
+          <label><input type="checkbox" data-e="1"> Gaya seragam dengan aset teman</label>
+          <label><input type="checkbox" data-e="2"> Tanpa cacat (tangan aneh, tulisan acak)</label>
+          <label><input type="checkbox" data-e="3"> Mendukung pesan slide</label>
+        </div></div>
+        <div><label for="inPerbaiki">Yang perlu diperbaiki</label><input id="inPerbaiki" maxlength="400" placeholder="contoh: tangan terlihat aneh, latar terlalu ramai"></div>
+        <div class="row"><button class="btn" id="btnV1" type="button">Kirim v1</button></div>
+      </div>
+      <div class="ver" id="v2box">
+        <div class="row" style="justify-content:space-between"><h3>Prompt v2 (revisi)</h3><span class="badge" id="v2badge">menunggu v1</span></div>
+        <textarea id="inV2" maxlength="600" placeholder="Salin prompt v1, lalu perbaiki sesuai evaluasi"></textarea>
+        <div><label for="inAlasan">Hasil v2 & alasan memilih gambar final</label><input id="inAlasan" maxlength="400" placeholder="contoh: v2 lebih jelas karena subjek di tengah dan warna sama dengan sampul"></div>
+        <div class="row"><button class="btn" id="btnV2" type="button">Kirim v2</button></div>
+      </div>
+    </section>
+
+    <!-- 3 Cek mutu -->
+    <section class="card" data-panel="cek" hidden>
+      <p class="eyebrow">Aktivitas 3 · Cek Mutu, Etika & Susun Slide</p>
+      <h2>Quality Checker memimpin, semua anggota ikut memeriksa</h2>
+      <div class="tablewrap"><table class="cek" id="cekTable"><thead><tr><th>Kriteria cek</th><th>Sampul</th><th>Isi</th><th>Penutup</th></tr></thead><tbody></tbody></table></div>
+      <div class="row"><button class="btn" id="btnCekMutu" type="button">Simpan cek mutu</button><span class="lead" id="cekInfo" style="font-size:13px"></span></div>
+      <div class="ver">
+        <h3>File 3 slide final tim</h3>
+        <p class="lead" style="font-size:14px">Tempel tautan Canva/Google Slides (akses "siapa saja yang memiliki link dapat melihat"). File tetap diunggah ke Google Classroom.</p>
+        <input id="inLink" type="url" inputmode="url" maxlength="300" placeholder="https://…">
+        <div class="row"><button class="btn" id="btnFinal" type="button">Kirim tautan final</button><span class="lead" id="finalInfo" style="font-size:13px"></span></div>
+      </div>
+    </section>
+
+    <!-- 4 Gallery walk -->
+    <section class="card" data-panel="galeri" hidden>
+      <p class="eyebrow">Penilaian Teman · 2 Bintang 1 Harapan</p>
+      <h2>Beri umpan balik untuk minimal 2 tim lain</h2>
+      <div><label for="inUntuk">Tim yang dinilai</label><select id="inUntuk"></select></div>
+      <div class="note" id="untukInfo">Pilih tim untuk melihat tema dan kunci gayanya.</div>
+      <div><label for="inB1">★ Bintang 1 (hal yang sudah bagus)</label><input id="inB1" maxlength="300"></div>
+      <div><label for="inB2">★ Bintang 2 (hal yang sudah bagus)</label><input id="inB2" maxlength="300"></div>
+      <div><label for="inH">☆ Harapan (saran perbaikan yang santun dan spesifik)</label><input id="inH" maxlength="300"></div>
+      <div class="row"><button class="btn" id="btnUmpan" type="button">Kirim umpan balik</button><span class="lead" id="umpanInfo" style="font-size:13px"></span></div>
+      <h3 style="margin-top:6px">Umpan balik untuk timku</h3>
+      <div id="umpanMasuk" style="display:flex;flex-direction:column;gap:8px"></div>
+    </section>
+
+    <!-- 5 Refleksi -->
+    <section class="card" data-panel="refleksi" hidden>
+      <p class="eyebrow">Refleksi</p>
+      <h2>3 · 2 · 1 dan Al-Khabir</h2>
+      <div class="note" style="color:var(--ink)"><b>QS An-Naml: 88</b>
+        <div lang="ar" dir="rtl" style="font-family:'Amiri','Traditional Arabic',serif;font-size:26px;line-height:1.8;text-align:right">صُنْعَ اللَّهِ الَّذِي أَتْقَنَ كُلَّ شَيْءٍ ۚ إِنَّهُ خَبِيرٌ بِمَا تَفْعَلُونَ</div>
+        "(Itulah) ciptaan Allah yang mencipta dengan sempurna segala sesuatu. Sungguh, Dia Mahateliti apa yang kamu kerjakan." Allah mencintai orang yang bekerja dengan <i>itqan</i>: sungguh-sungguh, rapi, dan jujur.</div>
+      <div><label for="inR3">3 hal yang kupelajari</label><textarea id="inR3" maxlength="400"></textarea></div>
+      <div><label for="inR2">2 kendala & solusinya</label><textarea id="inR2" maxlength="400"></textarea></div>
+      <div><label for="inR1">1 hal yang ingin kucoba</label><input id="inR1" maxlength="300"></div>
+      <div><label for="inKhabir">Bagaimana sifat Allah Al-Khabir (Yang Maha Teliti) membuatku lebih teliti dan jujur saat berkarya dengan AI hari ini?</label><textarea id="inKhabir" maxlength="400"></textarea></div>
+      <div><label>Penilaian diri (4 = sangat baik, 3 = baik, 2 = cukup, 1 = perlu bantuan)</label>
+        <div class="tablewrap"><table class="cek" id="diriTable"><thead><tr><th>Pernyataan</th><th>4</th><th>3</th><th>2</th><th>1</th></tr></thead><tbody></tbody></table></div></div>
+      <div class="row"><button class="btn" id="btnRefl" type="button">Kirim refleksi</button><span class="lead" id="reflInfo" style="font-size:13px"></span></div>
+    </section>
+  </div>
+  <footer>Digital Learning Kelas VIII · SMIT Gema Nurani · Created By Ai Prompted By Guru Belajar Digital (Rauf)</footer>
+</div>
+<button id="helpBtn" type="button" hidden>🙋 Minta bantuan</button>
+<dialog id="helpDlg"><div class="card"><h2>🙋 Minta bantuan</h2><p class="lead">Tulis singkat kendalamu. Guru dan teman melihatnya di papan proyek.</p><input id="inHelp" maxlength="120" placeholder="contoh: tulisan di gambar selalu acak"><div class="row"><button class="btn" id="btnHelpGo" type="button">Kirim</button><button class="btn ghost" id="btnHelpX" type="button">Batal</button></div></div></dialog>
+<div class="toast" id="toast" hidden></div>
+<script>
+(function(){
+"use strict";
+/* ===== PENGATURAN GURU ===== */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyTFQbVXsTQAN3U3HTpYUl2RhDiYBEMnSN2tXgEus_0tLIF3-77ozT9N4MvB5h6lX6SIA/exec';
+const SESI='DL Sesi 3 Aset Visual';
+const MAX_TIM=12;
+/* =========================== */
+const KEY='dl8.asetVisual.v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ASET={sampul:'Sampul',isi:'Isi',penutup:'Penutup'},PERAN={art:'🎨 Art Director',prompt:'✍️ Prompt Writer',qc:'🔍 Quality Checker'};
+const KRIT=['Relevan: mendukung pesan dan tema','Konsisten: gaya, warna, cahaya seragam','Jelas: tidak buram, tanpa cacat','Hak cipta: bukan karakter/merek terkenal','Privasi: tidak meniru wajah teman/guru','Rasio 16:9: pas di slide','Judul diketik manual','Label AI tercantum'];
+const RAWAN=/(mickey|disney|marvel|spider.?man|batman|doraemon|upin|ipin|pokemon|pikachu|naruto|spongebob|frozen|elsa|hello kitty|minecraft|roblox|nike|adidas|coca.?cola|mcdonald|wajah (teman|guru|bu|pak)|mirip (artis|teman|guru))/i;
+let S=null;try{S=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+if(!S)S={};if(!Array.isArray(S.q))S.q=[];S.v=S.v||{};S.form=S.form||{};
+if(!S.dev)S.dev='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+let tt=0;function toast(m,ms){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,ms||2800);}
+let roster=null,board=null;
+
+/* ---------- kirim (antrean offline) ---------- */
+function enqueue(it){
+  if(!S.tim&&it.jenis!=='pv-gabung'){toast('Simpan tim dulu di kartu "Timku".');return false;}
+  it.id=S.dev+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+  it.tim=it.tim||S.tim;S.q.push(it);if(S.q.length>80)S.q=S.q.slice(-80);save();setTimeout(sync,30);return true;
+}
+let busy=false;
+async function sync(){
+  if(!ENDPOINT||busy||!S.q.length||!S.kode||S.bad)return chip();
+  busy=true;chip();let sent=false;
+  try{while(S.q.length){
+    const p=Object.assign({},S.q[0],{sesi:SESI,kode:S.kode,nama:S.nama,perangkat:S.dev});
+    const j=await (await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)})).json();
+    if(j&&j.ok){S.q.shift();save();sent=true;}
+    else if(j&&(j.error==='kode'||j.error==='nama')){S.bad=true;save();toast('Nama atau kode kelas tidak dikenali server. Tekan "Ganti nama".',5000);break;}
+    else{S.q.shift();save();toast('Satu catatan ditolak server ('+((j&&j.error)||'?')+'). Periksa isiannya.',4000);}
+  }}catch(e){}
+  busy=false;chip();if(sent)setTimeout(load,1200);
+}
+function chip(){
+  const c=$('hudSync');if(!ENDPOINT){c.hidden=false;c.textContent='Mode latihan (tidak terkirim)';return;}
+  if(!S.nama){c.hidden=true;return;}c.hidden=false;
+  c.textContent=S.bad?'⚠ Ganti nama':busy?'☁ Mengirim…':S.q.length?'⏳ '+S.q.length+' menunggu sinyal':'☁ Tersimpan ke guru';
+}
+window.addEventListener('online',sync);setInterval(()=>{if(S.q.length)sync();},30000);
+
+/* ---------- data papan (untuk melihat tim) ---------- */
+async function load(){
+  if(!ENDPOINT||!S.kode)return render();
+  try{const j=await (await fetch(ENDPOINT+'?papan=proyek&kode='+encodeURIComponent(S.kode)+'&sesi='+encodeURIComponent(SESI))).json();if(j&&j.ok)board=j;}catch(e){}
+  render();
+}
+setInterval(()=>{if(S.nama&&!document.hidden)load();},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.nama)load();});
+const myTeam=()=>board&&S.tim?board.tim.find(t=>t.tim===S.tim):null;
+
+/* ---------- masuk ---------- */
+async function cek(){
+  const kv=$('inKode').value.trim().toUpperCase();$('inKode').value=kv;
+  if(!/^[0-9A-Z]{1,4}-[0-9A-Z]{2,12}$/.test(kv)){$('cekMsg').textContent='Tulis kode kelas dari guru, contoh: 8A-GN26.';return;}
+  if(!ENDPOINT){roster={kode:kv,kelas:kv.split('-')[0],siswa:[{no:1,nama:'Contoh Siswa A'},{no:2,nama:'Contoh Siswa B'},{no:3,nama:'Contoh Siswa C'}]};fill();return;}
+  $('cekMsg').textContent='Mencari kelas…';$('btnCek').disabled=true;
+  try{const j=await (await fetch(ENDPOINT+'?kode='+encodeURIComponent(kv))).json();
+    if(!j.ok){$('cekMsg').textContent='Kode kelas tidak dikenal. Tanyakan ke guru.';return;}
+    if(!j.siswa||!j.siswa.length){$('cekMsg').textContent='Daftar nama kelas '+j.kelas+' belum diisi guru.';return;}
+    roster={kode:kv,kelas:j.kelas,siswa:j.siswa};fill();
+  }catch(e){$('cekMsg').textContent='Tidak bisa terhubung. Periksa internet, lalu tekan Cek kelas lagi.';}
+  finally{$('btnCek').disabled=false;}
+}
+function fill(){
+  const sel=$('inSiswa');sel.innerHTML='<option value="">— pilih namamu —</option>'+roster.siswa.map((s,k)=>`<option value="${k}">${s.no!==''?esc(s.no)+'. ':''}${esc(s.nama)}</option>`).join('');
+  const prev=roster.siswa.findIndex(s=>s.nama===S.nama);if(prev>=0)sel.value=String(prev);
+  $('pickWrap').hidden=false;$('btnMasuk').hidden=false;$('cekMsg').textContent='Kelas '+roster.kelas+' ditemukan ✓';sel.focus();
+}
+$('btnCek').onclick=cek;
+$('inKode').addEventListener('keydown',e=>{if(e.key==='Enter')cek();});
+$('inKode').addEventListener('input',()=>{roster=null;$('pickWrap').hidden=true;$('btnMasuk').hidden=true;$('cekMsg').textContent='';});
+$('btnMasuk').onclick=()=>{
+  const k=$('inSiswa').value;if(k===''){toast('Pilih namamu dari daftar.');return;}
+  const s=roster.siswa[+k];
+  if(S.nama&&S.nama!==s.nama){S.tim=0;S.peran='';S.aset='';S.v={};S.form={};S.q=[];S.help=false;}
+  S.nama=s.nama;S.kode=roster.kode;S.kelas=roster.kelas;S.bad=false;save();open();sync();load();
+};
+$('btnGanti').onclick=()=>{$('app').hidden=true;$('helpBtn').hidden=true;$('login').hidden=false;$('inKode').value=S.kode||'';if(S.kode)cek();};
+
+/* ---------- tim ---------- */
+let peranSel='';
+$('inTim').innerHTML='<option value="">— pilih tim —</option>'+Array.from({length:MAX_TIM},(_,i)=>`<option value="${i+1}">Tim ${i+1}</option>`).join('');
+$('peranPick').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{peranSel=b.dataset.p;$('peranPick').querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+$('btnTim').onclick=()=>{
+  const t=+$('inTim').value,a=$('inAset').value;
+  if(!t){toast('Pilih nomor tim.');return;}if(!peranSel){toast('Pilih peranmu.');return;}
+  S.tim=t;S.peran=peranSel;S.aset=a;save();
+  enqueue({jenis:'pv-gabung',tim:t,peran:peranSel,aset:a});$('inAsetP').value=a;
+  toast('Tersimpan: Tim '+t+' · '+PERAN[peranSel]);render();
+};
+
+/* ---------- tabs ---------- */
+function tab(name){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));document.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==name);S.tab=name;save();}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+
+/* ---------- 1 rencana ---------- */
+const SUG=['flat illustration','cat air lembut','3D render lucu','gaya poster minimalis','warna hijau tosca dan krem pastel','warna biru laut dan kuning cerah','cahaya pagi lembut','golden hour','pencahayaan studio terang'];
+$('sugGaya').innerHTML=SUG.map(s=>`<button type="button">${esc(s)}</button>`).join('');
+$('sugGaya').onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=$('inGaya').value.trim();$('inGaya').value=v?(v.replace(/,\s*$/,'')+', '+b.textContent):b.textContent;};
+$('inTema').onchange=()=>{$('inTemaLain').hidden=$('inTema').value!=='__lain';};
+$('btnRencana').onclick=()=>{
+  const tema=$('inTema').value==='__lain'?$('inTemaLain').value.trim():$('inTema').value;
+  const r={tema,tujuan:$('inTujuan').value.trim(),audiens:$('inAudiens').value.trim(),gaya:$('inGaya').value.trim()};
+  if(!r.tema||!r.tujuan||!r.audiens||!r.gaya){toast('Lengkapi tema, tujuan, audiens, dan kunci gaya.');return;}
+  if(enqueue(Object.assign({jenis:'pv-rencana'},r))){S.rencana=r;save();toast('Rencana tim tersimpan. Lanjut ke Produksi.');render();}
+};
+
+/* ---------- 2 produksi ---------- */
+const gaya=()=>{const t=myTeam();return (t&&t.rencana&&t.rencana.gaya)||(S.rencana&&S.rencana.gaya)||'';};
+function composed(){const s=$('inSubjek').value.trim(),g=gaya();return [s,g].filter(Boolean).join(', ');}
+function updPrompt(){
+  const p=composed();$('promptOut').textContent=p||'…';
+  const all=[p,$('inV1').value,$('inV2').value].join(' ');const m=all.match(RAWAN);
+  $('etikaWarn').hidden=!m;if(m)$('etikaWarn').textContent='⚠ Prompt menyebut "'+m[0]+'". Hindari karakter/merek terkenal dan wajah orang nyata. Ganti dengan deskripsi umum buatanmu sendiri.';
+  const a=$('inAsetP').value;S.form[a]=Object.assign(S.form[a]||{},{subjek:$('inSubjek').value,v1:$('inV1').value,v2:$('inV2').value,perbaiki:$('inPerbaiki').value,alasan:$('inAlasan').value});save();
+}
+['inSubjek','inV1','inV2','inPerbaiki','inAlasan'].forEach(id=>$(id).addEventListener('input',updPrompt));
+$('inAsetP').onchange=()=>{const f=S.form[$('inAsetP').value]||{};$('inSubjek').value=f.subjek||'';$('inV1').value=f.v1||'';$('inV2').value=f.v2||'';$('inPerbaiki').value=f.perbaiki||'';$('inAlasan').value=f.alasan||'';$('evalChecks').querySelectorAll('input').forEach(x=>x.checked=false);updPrompt();renderVer();};
+$('btnPakai').onclick=()=>{const p=composed();if(!p){toast('Tulis subjek dulu.');return;}$('inV1').value=p;updPrompt();};
+$('btnSalin').onclick=()=>{const p=composed();if(!p){toast('Tulis subjek dulu.');return;}
+  const fb=()=>{const r=document.createRange();r.selectNodeContents($('promptOut'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Tekan Ctrl+C untuk menyalin.');};
+  try{navigator.clipboard.writeText(p).then(()=>toast('Prompt tersalin. Tempel di Canva/Gemini/Bing.'),fb);}catch(e){fb();}};
+$('btnV1').onclick=()=>{
+  const a=$('inAsetP').value,p=$('inV1').value.trim();if(!p){toast('Isi prompt v1.');return;}
+  const ck=[...$('evalChecks').querySelectorAll('input')].map(x=>x.checked?'1':'0').join('');
+  const cat=$('inPerbaiki').value.trim();if(!cat&&ck!=='1111'){toast('Tulis yang perlu diperbaiki dari hasil v1.');return;}
+  if(enqueue({jenis:'pv-aset',aset:a,versi:1,prompt:p,catatan:cat,cek:ck})){S.v[a+'1']=1;if(!$('inV2').value)$('inV2').value=p;save();updPrompt();renderVer();toast('v1 terkirim. Sekarang revisi menjadi v2.');}
+};
+$('btnV2').onclick=()=>{
+  const a=$('inAsetP').value,p=$('inV2').value.trim();if(!S.v[a+'1']&&!teamHas(a,'v1')){toast('Kirim v1 dulu.');return;}
+  if(!p){toast('Isi prompt v2.');return;}if(p===$('inV1').value.trim()){toast('Prompt v2 masih sama dengan v1. Revisi minimal satu bagian.');return;}
+  const al=$('inAlasan').value.trim();if(!al){toast('Tulis alasan memilih gambar final.');return;}
+  if(enqueue({jenis:'pv-aset',aset:a,versi:2,prompt:p,catatan:al})){S.v[a+'2']=1;save();renderVer();toast('v2 terkirim. Lanjut ke Cek Mutu bersama tim.');}
+};
+const teamHas=(a,v)=>{const t=myTeam();return !!(t&&t.aset[a]&&t.aset[a][v]);};
+function renderVer(){
+  const a=$('inAsetP').value,h1=S.v[a+'1']||teamHas(a,'v1'),h2=S.v[a+'2']||teamHas(a,'v2');
+  $('v1badge').textContent=h1?'terkirim ✓':'belum dikirim';$('v1badge').className='badge'+(h1?' ok':'');$('v1box').classList.toggle('done',!!h1);
+  $('v2badge').textContent=h2?'terkirim ✓':h1?'siap direvisi':'menunggu v1';$('v2badge').className='badge'+(h2?' ok':h1?' am':'');$('v2box').classList.toggle('done',!!h2);
+}
+
+/* ---------- 3 cek mutu ---------- */
+$('cekTable').querySelector('tbody').innerHTML=KRIT.map((k,i)=>`<tr><td>${esc(k)}</td>${['sampul','isi','penutup'].map(a=>`<td><input type="checkbox" aria-label="${esc(k)} · ${ASET[a]}" data-a="${a}" data-k="${i}"></td>`).join('')}</tr>`).join('');
+$('btnCekMutu').onclick=()=>{
+  let n=0;['sampul','isi','penutup'].forEach(a=>{const bits=KRIT.map((_,i)=>$('cekTable').querySelector(`[data-a="${a}"][data-k="${i}"]`).checked?'1':'0').join('');const t=myTeam();if(bits==='00000000'&&!(t&&t.cek[a]))return;if(enqueue({jenis:'pv-cek',aset:a,cek:bits}))n++;});
+  if(!n){toast('Centang kriteria yang sudah terpenuhi dulu.');return;}
+  S.cekTouched=false;save();{const lolos=['sampul','isi','penutup'].filter(a=>KRIT.every((_,i)=>$('cekTable').querySelector(`[data-a="${a}"][data-k="${i}"]`).checked));
+    toast(lolos.length===3?'Ketiga aset lolos cek! Susun slide dan kirim tautan final.':'Tersimpan. Aset belum lolos: '+['sampul','isi','penutup'].filter(a=>!lolos.includes(a)).map(a=>ASET[a]).join(', ')+'. Perbaiki lalu cek lagi.',4500);}
+};
+$('btnFinal').onclick=()=>{const l=$('inLink').value.trim();if(!/^https:\/\/\S+$/.test(l)){toast('Tautan harus diawali https://');return;}if(enqueue({jenis:'pv-final',link:l}))toast('Tautan final terkirim. Jangan lupa unggah ke Google Classroom.');};
+
+/* ---------- 4 gallery walk ---------- */
+function renderUntuk(){
+  const sel=$('inUntuk'),cur=sel.value,teams=(board?board.tim:[]).filter(t=>t.tim!==S.tim);
+  const opts=teams.length?teams.map(t=>t.tim):Array.from({length:MAX_TIM},(_,i)=>i+1).filter(n=>n!==S.tim);
+  sel.innerHTML='<option value="">— pilih tim —</option>'+opts.map(n=>{const t=teams.find(x=>x.tim===n);return `<option value="${n}">Tim ${n}${t&&t.rencana?' · '+esc(t.rencana.tema):''}</option>`;}).join('');
+  if(cur)sel.value=cur;showUntuk();
+  const mine=myTeam(),list=mine?mine.umpan.slice().reverse():[];
+  $('umpanMasuk').innerHTML=list.map(u=>`<div class="fb"><b>Dari Tim ${u.dari}</b> (${esc(u.nama)})<br>★ ${esc(u.b1)}${u.b2?'<br>★ '+esc(u.b2):''}<br>☆ <b>Harapan:</b> ${esc(u.h)}</div>`).join('')||'<p class="lead" style="font-size:14px">Belum ada umpan balik untuk timmu.</p>';
+}
+function showUntuk(){const n=+$('inUntuk').value,t=board&&board.tim.find(x=>x.tim===n);$('untukInfo').innerHTML=t&&t.rencana?`<b>Tema:</b> ${esc(t.rencana.tema)}<br><b>Kunci gaya:</b> ${esc(t.rencana.gaya)}`:'Pilih tim untuk melihat tema dan kunci gayanya.';}
+$('inUntuk').onchange=showUntuk;
+$('btnUmpan').onclick=()=>{
+  const n=+$('inUntuk').value,b1=$('inB1').value.trim(),b2=$('inB2').value.trim(),h=$('inH').value.trim();
+  if(!n){toast('Pilih tim yang dinilai.');return;}if(!b1||!h){toast('Isi minimal Bintang 1 dan Harapan.');return;}
+  if(enqueue({jenis:'pv-umpan',untuk:n,b1,b2,harapan:h})){S.umpan=(S.umpan||0)+1;save();['inB1','inB2','inH'].forEach(id=>$(id).value='');$('inUntuk').value='';showUntuk();
+    $('umpanInfo').textContent='Sudah memberi '+S.umpan+' umpan balik'+(S.umpan<2?' (minimal 2)':' ✓');toast('Terima kasih! Umpan balik terkirim ke Tim '+n+'.');}
+};
+
+/* ---------- 5 refleksi ---------- */
+const DIRI=['Saya dapat menulis prompt lengkap Subjek–Gaya–Pencahayaan dengan kunci gaya tim.','Saya dapat menghasilkan gambar dengan Canva/Gemini/Bing secara mandiri.','Saya merevisi prompt minimal 1 kali berdasarkan evaluasi hasil.','Aset buatan saya relevan, jelas, dan seragam dengan aset tim.','Saya menjalankan peran dan membantu anggota tim.','Saya jujur mencantumkan label AI dan menghindari pelanggaran hak cipta/privasi.'];
+$('diriTable').querySelector('tbody').innerHTML=DIRI.map((d,i)=>`<tr><td>${esc(d)}</td>${[4,3,2,1].map(v=>`<td><input type="radio" name="diri${i}" value="${v}" aria-label="${esc(d)}: ${v}"></td>`).join('')}</tr>`).join('');
+$('btnRefl').onclick=()=>{
+  const r={r3:$('inR3').value.trim(),r2:$('inR2').value.trim(),r1:$('inR1').value.trim(),khabir:$('inKhabir').value.trim()};
+  if(!r.r3||!r.r2||!r.khabir){toast('Lengkapi refleksi 3-2-1 dan pertanyaan Al-Khabir.');return;}
+  const dv=DIRI.map((_,i)=>{const x=document.querySelector(`input[name="diri${i}"]:checked`);return x?x.value:'';});
+  if(dv.some(v=>!v)){toast('Isi semua penilaian diri (pilih 4, 3, 2, atau 1).');return;}r.diri=dv.join('');
+  if(enqueue(Object.assign({jenis:'pv-refleksi'},r))){$('reflInfo').textContent='Refleksi terkirim ✓';toast('Refleksi terkirim. Jazakallahu khairan!');}
+};
+
+/* ---------- bantuan ---------- */
+$('helpBtn').onclick=()=>{
+  if(S.help){if(enqueue({jenis:'pv-bantuan',status:'selesai',catatan:''})){S.help=false;save();renderHelp();toast('Alhamdulillah, sudah teratasi.');}return;}
+  if(!S.tim){toast('Simpan tim dulu.');return;}$('inHelp').value='';try{$('helpDlg').showModal();}catch(e){$('helpDlg').setAttribute('open','');}$('inHelp').focus();
+};
+$('btnHelpX').onclick=()=>$('helpDlg').close();
+$('btnHelpGo').onclick=()=>{const c=$('inHelp').value.trim();if(!c){toast('Tulis kendalamu singkat.');return;}if(enqueue({jenis:'pv-bantuan',status:'minta',catatan:c})){S.help=true;save();renderHelp();$('helpDlg').close();toast('Namamu tampil di papan. Guru atau teman akan membantu.');}};
+function renderHelp(){$('helpBtn').textContent=S.help?'✓ Sudah teratasi':'🙋 Minta bantuan';$('helpBtn').classList.toggle('on',!!S.help);}
+
+/* ---------- render ---------- */
+function open(){$('login').hidden=true;$('app').hidden=false;$('helpBtn').hidden=false;
+  if(S.aset)$('inAsetP').value=S.aset;$('inAsetP').onchange();tab(S.tab||'rencana');render();}
+function render(){
+  if(!S.nama)return;chip();renderHelp();
+  $('hudName').textContent=S.nama+' · '+(S.kelas||'')+(S.tim?' · Tim '+S.tim:'');
+  const t=myTeam();
+  if(S.tim){$('timTitle').textContent='Tim '+S.tim+' · '+(PERAN[S.peran]||'')+' · aset '+(ASET[S.aset]||'');$('inTim').value=S.tim;$('inAset').value=S.aset||'sampul';peranSel=S.peran;
+    $('peranPick').querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.p===S.peran));}
+  const mates=board?board.anggota.filter(a=>a.tim&&a.tim===S.tim):[];
+  $('mates').innerHTML=mates.length?mates.map(m=>`<span>${esc(m.nama)} · ${esc((PERAN[m.peran]||'').replace(/^\S+\s/,''))}${m.aset?' · '+ASET[m.aset]:''}</span>`).join(''):(S.tim?'<span>Anggota tim tampil setelah tersimpan di server.</span>':'');
+  // rencana prefill (sekali)
+  const rc=(t&&t.rencana)||S.rencana;
+  if(rc&&!S.rencanaFilled&&!$('inTujuan').value){const opt=[...$('inTema').options].some(o=>o.value===rc.tema);$('inTema').value=opt?rc.tema:'__lain';$('inTemaLain').hidden=opt;if(!opt)$('inTemaLain').value=rc.tema;
+    $('inTujuan').value=rc.tujuan;$('inAudiens').value=rc.audiens;$('inGaya').value=rc.gaya;}
+  $('rencanaInfo').textContent=t&&t.rencana?'Tersimpan oleh '+t.rencana.oleh:'';
+  const g=gaya();$('gayaShow').textContent=g||'Isi dulu kunci gaya di Aktivitas 1.';updPrompt();renderVer();
+  // cek prefill dari server
+  if(t)['sampul','isi','penutup'].forEach(a=>{const c=t.cek[a];if(c&&!S['cekTouched'])KRIT.forEach((_,i)=>{$('cekTable').querySelector(`[data-a="${a}"][data-k="${i}"]`).checked=c.cek[i]==='1';});});
+  $('cekInfo').textContent=t&&Object.keys(t.cek).length?'Terakhir disimpan oleh '+Object.values(t.cek).sort((a,b)=>b.t-a.t)[0].nama:'';
+  $('finalInfo').textContent=t&&t.final?'Tautan final tim sudah terkirim ✓':'';
+  if(t&&t.final&&!$('inLink').value)$('inLink').value=t.final.link;
+  renderUntuk();
+}
+$('cekTable').addEventListener('change',()=>{S.cekTouched=true;});
+
+/* ---------- mulai ---------- */
+chip();
+if(S.nama&&S.kode){$('inKode').value=S.kode;open();load();sync();}
+})();
+</script>
+</body>
+</html>
